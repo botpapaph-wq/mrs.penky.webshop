@@ -45,11 +45,17 @@ async function loadCatalog(env) {
     const rows = await res.json();
     if (!Array.isArray(rows) || rows.length === 0) return null;
 
+    // Bestandsführung wird nur berücksichtigt, wenn sie überhaupt gepflegt ist.
+    // Steht bei ALLEN Artikeln 0, ist das Feld ungenutzt (CJ-Sync schreibt
+    // derzeit keine Mengen) — dann darf der Bot nicht behaupten, alles sei
+    // ausverkauft.
+    const stockIsMaintained = rows.some((r) => Number(r.stock_quantity) > 0);
+
     return rows
       .map((r) => {
         const php = r.price_php != null ? `PHP ${Number(r.price_php).toFixed(0)}` : 'price on request';
         const usd = r.price_usd != null ? ` / USD ${Number(r.price_usd).toFixed(2)}` : '';
-        const stock = r.stock_quantity === 0 ? ' [out of stock]' : '';
+        const stock = stockIsMaintained && Number(r.stock_quantity) === 0 ? ' [out of stock]' : '';
         return `- ${r.title} (${r.category}) — ${php}${usd}${stock}`;
       })
       .join('\n');
