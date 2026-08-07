@@ -28,6 +28,15 @@
         z-index: 999;
         transition: transform 0.2s;
         font-family: Georgia, Garamond, serif;
+        overflow: hidden;
+        padding: 0;
+      }
+      #chat-toggle img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 8px;
+        display: block;
       }
       #chat-toggle:hover { transform: scale(1.1); }
       #chat-window {
@@ -116,7 +125,7 @@
       #chat-send:hover { background-color: var(--gold); color: var(--navy); }
       .loading { opacity: 0.6; }
     </style>
-    <div id="chat-toggle">💬</div>
+    <div id="chat-toggle" role="button" tabindex="0" aria-label="Open chat"><img src="./logo-header.png" alt="Mrs. Penky" /></div>
     <div id="chat-window">
       <div id="chat-header">
         Prayer & Blessings Support
@@ -198,9 +207,22 @@
     if (e.key === 'Enter') sendMessage();
   });
 
+  // Opening line. Shown once when there is no stored conversation, so the
+  // customer is greeted and told what the assistant can actually do instead
+  // of facing an empty box.
+  const GREETING =
+    "Maayong adlaw, and welcome to Mrs. Penky's! I'm here to help you look " +
+    "for crosses, rosaries, bracelets or lights, check on an order, or answer " +
+    "questions about shipping and payment. How can I help you po?";
+
   // Load conversation history from localStorage
   const saved = localStorage.getItem('chat-history');
-  if (saved) messages = JSON.parse(saved);
+  if (saved) {
+    try { messages = JSON.parse(saved) || []; } catch (e) { messages = []; }
+  }
+  if (!messages.length) {
+    messages.push({ role: 'assistant', content: GREETING });
+  }
   renderMessages();
 
   // Save conversation on every message
