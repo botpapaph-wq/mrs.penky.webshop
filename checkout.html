@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout - Mrs. Penky</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Georgia', 'Garamond', serif; background: #faf8f6; }
+    .gold { color: #D4AF37; }
+    .navy { color: #1C2541; }
+    .gold-bg { background-color: #D4AF37; }
+    .navy-bg { background-color: #1C2541; }
+  </style>
+</head>
+<body>
+  <!-- Header with Logo -->
+  <header class="navy-bg py-8 border-b-4" style="border-color: #D4AF37;">
+    <div class="max-w-2xl mx-auto px-4 flex justify-center">
+      <img src="./Mrs. Penky Logo.png" alt="Mrs. Penky" style="max-height: 140px; width: auto; object-fit: contain;" />
+    </div>
+  </header>
+
+  <div class="max-w-2xl mx-auto px-4 py-12">
+    <form id="checkoutForm" class="bg-white p-8 rounded-lg shadow-md space-y-6 border-t-4" style="border-color: #D4AF37;">
+      <h2 class="text-3xl font-bold navy mb-8">Checkout</h2>
+
+      <div>
+        <label class="block text-sm font-bold navy mb-2">Full Name</label>
+        <input type="text" name="customer_name" required class="w-full px-4 py-2 border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold navy mb-2">Email</label>
+        <input type="email" name="customer_email" required class="w-full px-4 py-2 border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold navy mb-2">Phone</label>
+        <input type="tel" name="customer_phone" required class="w-full px-4 py-2 border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold navy mb-2">Shipping Address</label>
+        <textarea name="shipping_address" rows="3" required class="w-full px-4 py-2 border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Street, City, Province, Postal Code"></textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold navy mb-2">Currency</label>
+        <select name="currency" class="w-full px-4 py-2 border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400">
+          <option value="PHP">PHP - Philippine Peso</option>
+          <option value="USD">USD - US Dollar</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold navy mb-3">Payment Method</label>
+        <div class="space-y-2">
+          <label class="flex items-center p-3 border-2 border-gray-300 rounded cursor-pointer hover:border-yellow-400 hover:bg-yellow-50">
+            <input type="radio" name="payment_method" value="paymongo" checked class="mr-3" />
+            <span class="font-semibold navy">PayMongo (GCash, Maya, Cards)</span>
+          </label>
+          <label class="flex items-center p-3 border-2 border-gray-300 rounded cursor-pointer hover:border-yellow-400 hover:bg-yellow-50">
+            <input type="radio" name="payment_method" value="stripe" class="mr-3" />
+            <span class="font-semibold navy">Stripe (International)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div style="background: #fffbf0; border-top: 4px solid #D4AF37;" class="p-4 rounded">
+        <h3 class="font-bold navy mb-3">Order Summary</h3>
+        <div id="orderSummary" class="space-y-2 text-sm mb-4"></div>
+        <div style="border-top: 2px solid #D4AF37;" class="pt-4">
+          <p class="font-bold navy text-lg">Total: <span id="totalAmount" class="gold">₱0</span></p>
+        </div>
+      </div>
+
+      <div style="background: #e3f2fd; border-left: 4px solid #1e88e5;" class="p-4 rounded">
+        <p class="text-sm text-gray-700">🙏 <em>"May this blessing bring peace and grace to your heart."</em></p>
+      </div>
+
+      <button type="submit" class="w-full px-6 py-3 navy-bg text-white rounded font-bold hover:bg-gray-900 transition text-lg">
+        Proceed to Payment
+      </button>
+    </form>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+    const EDGE_FUNCTION_URL = 'https://YOUR_PROJECT.supabase.co/functions/v1/create-checkout-session';
+
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+    function renderSummary() {
+      const summary = document.getElementById('orderSummary');
+      const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      document.getElementById('totalAmount').textContent = '₱' + total.toLocaleString();
+
+      if (cart.length === 0) {
+        summary.innerHTML = '<p class="text-gray-500">Your cart is empty</p>';
+      } else {
+        summary.innerHTML = cart.map((item) => `
+          <div class="flex justify-between">
+            <span>${item.title} × ${item.quantity}</span>
+            <span class="font-semibold">₱${(item.price * item.quantity).toLocaleString()}</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (cart.length === 0) {
+        alert('Your cart is empty. Please add items before checking out.');
+        return;
+      }
+
+      const formData = new FormData(e.target);
+      const payload = {
+        items: cart.map((item) => ({ product_id: item.product_id, quantity: item.quantity })),
+        customer_name: formData.get('customer_name'),
+        customer_email: formData.get('customer_email'),
+        customer_phone: formData.get('customer_phone'),
+        shipping_address: formData.get('shipping_address'),
+        currency: formData.get('currency'),
+        payment_method: formData.get('payment_method'),
+        success_url: `${window.location.origin}/success.html`,
+        cancel_url: `${window.location.origin}/checkout.html`,
+      };
+
+      try {
+        const res = await fetch(EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+        } else if (data.client_secret) {
+          window.location.href = `/payment.html?client_secret=${data.client_secret}`;
+        } else {
+          alert('Error: ' + (data.error || 'Checkout failed'));
+        }
+      } catch (err) {
+        alert('Checkout error: ' + err.message);
+      }
+    });
+
+    renderSummary();
+  </script>
+</body>
+</html>

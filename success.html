@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order Confirmed - Mrs. Penky</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Georgia', 'Garamond', serif; background: #faf8f6; }
+    .gold { color: #D4AF37; }
+    .navy { color: #1C2541; }
+    .gold-bg { background-color: #D4AF37; }
+    .navy-bg { background-color: #1C2541; }
+  </style>
+</head>
+<body>
+  <!-- Header with Logo -->
+  <header class="navy-bg py-8 border-b-4" style="border-color: #D4AF37;">
+    <div class="max-w-2xl mx-auto px-4 flex justify-center">
+      <img src="./Mrs. Penky Logo.png" alt="Mrs. Penky" style="max-height: 140px; width: auto; object-fit: contain;" />
+    </div>
+  </header>
+
+  <div class="max-w-2xl mx-auto px-4 py-12 text-center">
+    <div class="bg-white p-12 rounded-lg shadow-md border-t-4" style="border-color: #D4AF37;">
+      <div class="text-6xl mb-6">✝️</div>
+      <h2 class="text-3xl font-bold navy mb-4">Order Confirmed</h2>
+      <p class="text-gray-600 mb-6 text-lg">
+        Thank you for your order! Your spiritual gifts are being prepared with care.
+      </p>
+
+      <!-- Order Details -->
+      <div style="background: #fffbf0; border-left: 4px solid #D4AF37;" class="p-6 rounded mb-8 text-left">
+        <p class="text-sm navy font-semibold mb-2">Order Reference:</p>
+        <p class="font-mono text-gray-800 mb-6" id="orderRef">Loading...</p>
+
+        <p class="text-sm navy font-semibold mb-2">What Happens Next:</p>
+        <ul class="text-sm text-gray-700 space-y-2 ml-4">
+          <li>✓ Order confirmation email sent</li>
+          <li>✓ Payment processed securely</li>
+          <li>✓ Invoice generated automatically</li>
+          <li>✓ Shipment tracking info sent within 24 hours</li>
+        </ul>
+      </div>
+
+      <!-- Blessing -->
+      <div style="background: #e3f2fd; border-left: 4px solid #1e88e5;" class="p-6 rounded mb-8">
+        <p class="text-gray-700 leading-relaxed">
+          🙏 <em>"May these blessings bring peace, joy, and grace into your life. We are honored to share these spiritual gifts with you."</em>
+        </p>
+      </div>
+
+      <!-- CTA -->
+      <div>
+        <p class="text-sm text-gray-600 mb-4">
+          Need support? Our spiritual advisors are here to help.
+        </p>
+        <a href="/" class="inline-block px-8 py-3 navy-bg text-white rounded font-bold hover:bg-gray-900 transition">
+          Continue Shopping
+        </a>
+      </div>
+    </div>
+
+    <!-- Footer Note -->
+    <p class="text-gray-500 text-xs mt-12">
+      A confirmation email has been sent to your email address with full order details.
+    </p>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('order_id') || 'MRS-PENKY-' + Date.now();
+    document.getElementById('orderRef').textContent = orderId;
+    localStorage.setItem('cart', JSON.stringify([]));
+  </script>
+</body>
+</html>

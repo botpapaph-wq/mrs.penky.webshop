@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mrs. Penky - Faith & Blessings for Your Spiritual Journey</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    background: #ffffff;
+    margin: 0;
+    color: #1C2541;
+  }
+  .navy { color: #1C2541; }
+  .gold { color: #C9A961; }
+  .navy-bg { background: #1C2541; }
+  .gold-bg { background: #C9A961; }
+  .hero-gradient {
+    background: linear-gradient(120deg, #1C2541 0%, #2A3459 45%, #3E4A78 100%);
+  }
+  .pill-btn-primary {
+    background: #C9A961;
+    color: #1C2541;
+  }
+  .pill-btn-primary:hover { background: #D9BC7C; }
+  .pill-btn-outline {
+    border: 1.5px solid rgba(255,255,255,0.4);
+    color: #fff;
+  }
+  .pill-btn-outline:hover { border-color: #fff; }
+  .badge-pill {
+    background: rgba(201,169,97,0.15);
+    border: 1px solid rgba(201,169,97,0.4);
+  }
+  .float-card {
+    background: #10182E;
+    border-radius: 20px;
+  }
+  .product-card {
+    background: #fff;
+    border: 1px solid #ECE7DA;
+    border-radius: 16px;
+    transition: all 0.3s ease;
+  }
+  .product-card:hover {
+    box-shadow: 0 16px 32px rgba(28,37,65,0.1);
+    transform: translateY(-4px);
+  }
+  .product-image {
+    width: 100%;
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, #EFE6CE 0%, #DCC894 100%);
+    border-radius: 16px 16px 0 0;
+  }
+  .check-dot {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #E7F3EC;
+    color: #1C7C4C;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .banner-cta {
+    background: linear-gradient(120deg, #1C2541 0%, #2A3459 100%);
+    border-radius: 20px;
+  }
+  .footer-navy { background: #10182E; }
+  .logo-img { height: 40px; width: auto; }
+  .hero-portrait {
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.35);
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-white border-b border-gray-100">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+    <div class="flex items-center gap-2">
+      <img src="./logo-header.png" alt="Mrs. Penky" class="logo-img" />
+      <span class="text-lg font-bold navy">Mrs. <span class="gold">Penky</span></span>
+    </div>
+    <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
+      <a href="#shop" class="hover:text-gray-900">Shop</a>
+      <a href="#collections" class="hover:text-gray-900">Collections</a>
+      <a href="#story" class="hover:text-gray-900">Our Story</a>
+      <a href="#contact" class="hover:text-gray-900">Contact</a>
+    </nav>
+    <button id="cartBtn" class="px-5 py-2.5 rounded-full text-sm font-semibold pill-btn-primary transition">
+      Cart <span id="cartCount">(0)</span>
+    </button>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero-gradient relative overflow-hidden">
+  <div class="max-w-7xl mx-auto px-6 py-24 grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-12 items-center relative">
+    <div>
+      <div class="inline-flex items-center gap-2 badge-pill rounded-full px-4 py-1.5 mb-6">
+        <span class="w-1.5 h-1.5 rounded-full gold-bg"></span>
+        <span class="text-xs font-medium gold">New: Handcrafted Fall Collection</span>
+      </div>
+      <h1 class="text-5xl lg:text-6xl font-bold text-white leading-[1.08] mb-6" style="letter-spacing:-1px;">
+        Faith, handcrafted<br/>with grace —<br/>blessed for you.
+      </h1>
+      <p class="text-lg text-white/80 max-w-lg mb-8 leading-relaxed">
+        Not mass-produced goods — genuine spiritual companions. Handcrafted crosses, rosaries, and blessed keepsakes for your everyday devotion. Shipping across the Philippines and Southeast Asia.
+      </p>
+      <div class="flex flex-wrap gap-3">
+        <button onclick="document.getElementById('shop').scrollIntoView({behavior:'smooth'})" class="px-7 py-3.5 rounded-full font-semibold pill-btn-primary">Shop Now →</button>
+        <button class="px-7 py-3.5 rounded-full font-semibold pill-btn-outline">View Collection</button>
+      </div>
+    </div>
+    <div class="hidden lg:flex flex-col items-center" style="max-width: 200px; margin: 0 auto;">
+      <img src="./portrait-hero.png" alt="Mrs. Penky" class="hero-portrait" style="width: 100%; display:block;" />
+      <div class="float-card p-5 flex items-center gap-4 shadow-2xl mt-4" style="width: 100%;">
+        <div class="w-12 h-12 rounded-full flex-shrink-0" style="background: linear-gradient(135deg,#C9A961,#8A7442);"></div>
+        <div>
+          <p class="text-[10px] tracking-widest text-white/50 uppercase mb-1">Mrs. Penky</p>
+          <p class="text-sm font-semibold text-white leading-snug">Every piece is shipped with blessing and intention.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Value section -->
+<section class="max-w-7xl mx-auto px-6 py-20">
+  <p class="text-xs tracking-[3px] gold uppercase font-semibold mb-4">Handcrafted · Blessed · Shipped Across Asia</p>
+  <h2 class="text-4xl font-bold navy mb-6 max-w-2xl" style="letter-spacing:-0.5px;">Spiritual gifts that truly mean something.</h2>
+  <p class="text-gray-600 max-w-2xl mb-12 leading-relaxed">Every product is carefully sourced, blessed with intention, and delivered straight to your door — anywhere in the Philippines and Southeast Asia.</p>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-5">
+    <div>
+      <p class="text-sm font-bold navy uppercase tracking-wide mb-4">What we offer</p>
+      <div class="space-y-4">
+        <div class="flex gap-3"><span class="check-dot">✓</span><p class="text-sm text-gray-700"><strong class="navy">Handcrafted quality:</strong> every piece individually made.</p></div>
+        <div class="flex gap-3"><span class="check-dot">✓</span><p class="text-sm text-gray-700"><strong class="navy">Fast local shipping:</strong> secured packaging, quick delivery across the Philippines.</p></div>
+        <div class="flex gap-3"><span class="check-dot">✓</span><p class="text-sm text-gray-700"><strong class="navy">Blessed with intention:</strong> spiritual meaning in every detail.</p></div>
+      </div>
+    </div>
+    <div>
+      <p class="text-sm font-bold navy uppercase tracking-wide mb-4">Who it's for</p>
+      <div class="space-y-4">
+        <div class="flex gap-3"><span class="check-dot">✓</span><p class="text-sm text-gray-700"><strong class="navy">Daily devotion:</strong> for your everyday spiritual walk.</p></div>
+        <div class="flex gap-3"><span class="check-dot">✓</span><p class="text-sm text-gray-700"><strong class="navy">Meaningful gifts:</strong> for baptisms, weddings, and special occasions.</p></div>
+        <div class="flex gap-3"><span class="check-dot">✓</span><p class="text-sm text-gray-700"><strong class="navy">Home & car:</strong> blessings for every place.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Products -->
+<section id="shop" class="bg-gray-50 py-20">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex flex-col sm:flex-row justify-between sm:items-end gap-4 mb-10">
+      <div>
+        <p class="text-xs tracking-[3px] gold uppercase font-semibold mb-3">Devotional Collection</p>
+        <h2 class="text-3xl font-bold navy" style="letter-spacing:-0.5px;">Our Best Sellers</h2>
+      </div>
+      <div class="flex gap-2 overflow-x-auto">
+        <button onclick="filterCategory('all')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap navy-bg text-white">All</button>
+        <button onclick="filterCategory('crosses')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border navy">Crosses</button>
+        <button onclick="filterCategory('rosaries')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border navy">Rosaries</button>
+        <button onclick="filterCategory('bracelets')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border navy">Bracelets</button>
+      </div>
+    </div>
+    <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+  </div>
+</section>
+
+<!-- CTA banner -->
+<section class="max-w-7xl mx-auto px-6 py-20">
+  <div class="banner-cta px-10 py-14 flex flex-col md:flex-row justify-between items-center gap-8">
+    <div>
+      <div class="inline-flex items-center gap-2 badge-pill rounded-full px-4 py-1.5 mb-4">
+        <span class="text-xs font-medium gold">Shipping across PH & Southeast Asia</span>
+      </div>
+      <h3 class="text-2xl md:text-3xl font-bold text-white mb-2">Ready for your next blessing?</h3>
+      <p class="text-white/70 max-w-md">Explore the full collection and find your personal devotional piece.</p>
+    </div>
+    <button onclick="document.getElementById('shop').scrollIntoView({behavior:'smooth'})" class="px-7 py-3.5 rounded-full font-semibold pill-btn-primary whitespace-nowrap">Discover Collection →</button>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer-navy text-white pt-16 pb-8">
+  <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+    <div class="col-span-2 md:col-span-1">
+      <div class="flex items-center gap-2 mb-3">
+        <img src="./logo-header.png" alt="Mrs. Penky" style="height: 32px; width: auto; filter: brightness(0) invert(1);" />
+        <p class="text-lg font-bold">Mrs. <span class="gold">Penky</span></p>
+      </div>
+      <p class="text-sm text-white/50 leading-relaxed">Handcrafted spiritual gifts. Shipping across the Philippines and Southeast Asia.</p>
+    </div>
+    <div>
+      <p class="text-xs font-bold uppercase tracking-wide text-white/40 mb-3">Shop</p>
+      <div class="space-y-2 text-sm text-white/70">
+        <p>Crosses</p><p>Rosaries</p><p>Bracelets</p><p>Lights</p>
+      </div>
+    </div>
+    <div>
+      <p class="text-xs font-bold uppercase tracking-wide text-white/40 mb-3">Info</p>
+      <div class="space-y-2 text-sm text-white/70">
+        <p>About Us</p><p>Contact</p><p>Shipping</p><p>FAQ</p>
+      </div>
+    </div>
+    <div>
+      <p class="text-xs font-bold uppercase tracking-wide text-white/40 mb-3">Legal</p>
+      <div class="space-y-2 text-sm text-white/70">
+        <p>Terms of Service</p><p>Privacy Policy</p><p>Refund Policy</p>
+      </div>
+    </div>
+  </div>
+  <div class="max-w-7xl mx-auto px-6 pt-6 border-t border-white/10 text-xs text-white/40">
+    © 2026 Mrs. Penky · Faith & Blessings for Your Spiritual Journey
+  </div>
+</footer>
+
+<!-- Cart Sidebar -->
+<div id="cartSidebar" class="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl transform translate-x-full transition-transform z-50 overflow-y-auto">
+  <div class="p-7 flex flex-col h-full">
+    <div class="flex justify-between items-center mb-6 pb-5 border-b border-gray-100">
+      <h3 class="text-xl font-bold navy">Your Cart</h3>
+      <button id="closeCart" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+    </div>
+    <div id="cartItems" class="flex-1 mb-6 space-y-4 overflow-y-auto"></div>
+    <div class="border-t border-gray-100 pt-6">
+      <p class="text-sm text-gray-500 mb-1">Subtotal</p>
+      <p class="text-2xl font-bold navy mb-5">₱<span id="cartTotal">0</span></p>
+      <a href="checkout.html" class="block text-center w-full py-3.5 rounded-full font-semibold pill-btn-primary mb-2">Checkout</a>
+      <button id="continueShopping" class="w-full py-3.5 rounded-full font-semibold border navy">Continue Shopping</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let products = [
+  { id: 'cross-001', title: 'Wooden Prayer Cross', desc: 'Hand-carved olive wood', price_php: 599, category: 'crosses' },
+  { id: 'cross-002', title: 'Carved Spiritual Cross', desc: 'Traditional design', price_php: 899, category: 'crosses' },
+  { id: 'rosary-001', title: 'Car Rosary - Jesus', desc: 'Blessed for travel', price_php: 399, category: 'rosaries' },
+  { id: 'rosary-002', title: 'Daily Rosary Beads', desc: 'For daily meditation', price_php: 549, category: 'rosaries' },
+  { id: 'bracelet-001', title: 'Prayer Bracelet', desc: 'Engraved with intention', price_php: 799, category: 'bracelets' },
+  { id: 'light-001', title: 'LED Devotional Light', desc: 'Sacred illumination', price_php: 1299, category: 'lights' },
+  { id: 'light-002', title: 'Spiritual Night Light', desc: 'Blessed light', price_php: 1299, category: 'lights' },
+  { id: 'bracelet-002', title: 'Beaded Blessing Bracelet', desc: 'Handmade with care', price_php: 649, category: 'bracelets' }
+];
+let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+let currentFilter = 'all';
+
+function renderProducts() {
+  const grid = document.getElementById('productsGrid');
+  const filtered = currentFilter === 'all' ? products : products.filter(p => p.category === currentFilter);
+  grid.innerHTML = filtered.map(p => `
+    <div class="product-card overflow-hidden">
+      <div class="product-image"></div>
+      <div class="p-5">
+        <h3 class="font-semibold navy mb-1 text-sm">${p.title}</h3>
+        <p class="text-xs text-gray-500 mb-4">${p.desc}</p>
+        <div class="flex justify-between items-center">
+          <span class="text-lg font-bold gold">&#8369;${p.price_php.toLocaleString()}</span>
+          <button onclick="addToCart('${p.id}','${p.title}',${p.price_php})" class="navy-bg text-white px-3.5 py-2 rounded-full text-xs font-semibold hover:opacity-90">Add</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+function filterCategory(cat) { currentFilter = cat; renderProducts(); }
+function addToCart(id, title, price) {
+  const existing = cart.find(i => i.id === id);
+  if (existing) existing.qty++;
+  else cart.push({ id, title, price, qty: 1 });
+  localStorage.setItem('cart', JSON.stringify(cart));
+  updateCart();
+  document.getElementById('cartSidebar').classList.remove('translate-x-full');
+}
+function updateCart() {
+  const count = cart.reduce((s,i)=>s+i.qty,0);
+  const total = cart.reduce((s,i)=>s+i.price*i.qty,0);
+  document.getElementById('cartCount').textContent = '('+count+')';
+  document.getElementById('cartTotal').textContent = total.toLocaleString();
+  const items = document.getElementById('cartItems');
+  if (cart.length === 0) {
+    items.innerHTML = '<p class="text-gray-400 text-center text-sm py-8">Your cart is empty</p>';
+  } else {
+    items.innerHTML = cart.map((i,idx) => `
+      <div class="pb-4 border-b border-gray-100">
+        <div class="flex justify-between items-start mb-1">
+          <p class="font-medium navy text-sm">${i.title}</p>
+          <button onclick="removeFromCart(${idx})" class="text-gray-400 hover:text-red-500 text-xs">Remove</button>
+        </div>
+        <p class="text-xs text-gray-500">&#8369;${i.price.toLocaleString()} × ${i.qty}</p>
+      </div>
+    `).join('');
+  }
+}
+function removeFromCart(idx) { cart.splice(idx,1); localStorage.setItem('cart', JSON.stringify(cart)); updateCart(); }
+document.getElementById('cartBtn').addEventListener('click', () => document.getElementById('cartSidebar').classList.toggle('translate-x-full'));
+document.getElementById('closeCart').addEventListener('click', () => document.getElementById('cartSidebar').classList.add('translate-x-full'));
+document.getElementById('continueShopping').addEventListener('click', () => document.getElementById('cartSidebar').classList.add('translate-x-full'));
+renderProducts();
+updateCart();
+</script>
+</body>
+</html>
