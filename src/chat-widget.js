@@ -1,5 +1,7 @@
 (function() {
-  const CHAT_API = 'https://YOUR_PROJECT.supabase.co/functions/v1/api/chat';
+  // chat.js is a Cloudflare Pages Function, served from this same origin
+  // at /api/chat -- not from Supabase.
+  const CHAT_API = '/api/chat';
 
   // Create widget container
   const widget = document.createElement('div');

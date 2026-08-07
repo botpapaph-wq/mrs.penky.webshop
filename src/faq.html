@@ -7,6 +7,10 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  /* Sticky header is ~72px tall; without this every anchor jump
+     lands with its target hidden behind the bar. */
+  [id] { scroll-margin-top: 88px; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
     background: #ffffff;
@@ -40,9 +44,9 @@
     </a>
     <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
       <a href="./index.html#shop" class="hover:text-gray-900">Shop</a>
-      <a href="./index.html#collections" class="hover:text-gray-900">Collections</a>
-      <a href="./index.html#story" class="hover:text-gray-900">Our Story</a>
-      <a href="./index.html#contact" class="hover:text-gray-900">Contact</a>
+      <a href="./index.html#shop" class="hover:text-gray-900">Collections</a>
+      <a href="./about.html" class="hover:text-gray-900">Our Story</a>
+      <a href="./contact.html" class="hover:text-gray-900">Contact</a>
     </nav>
     <a href="./index.html" class="px-5 py-2.5 rounded-full text-sm font-semibold pill-btn-primary transition">Back to Shop</a>
   </div>
