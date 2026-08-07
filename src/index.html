@@ -486,6 +486,95 @@ document.getElementById('continueShopping').addEventListener('click', () => docu
 loadProducts();
 updateCart();
 </script>
+
+<!-- Christmas season countdown -->
+<div id="xmas-countdown" hidden>
+  <div class="cd-head">Christmas season starts in</div>
+  <div class="cd-grid">
+    <div class="cd-cell"><strong id="cd-d">--</strong><span>days</span></div>
+    <div class="cd-cell"><strong id="cd-h">--</strong><span>hrs</span></div>
+    <div class="cd-cell"><strong id="cd-m">--</strong><span>min</span></div>
+    <div class="cd-cell"><strong id="cd-s">--</strong><span>sec</span></div>
+  </div>
+  <div class="cd-foot">1 September &middot; Philippines</div>
+</div>
+<style>
+  #xmas-countdown {
+    position: fixed;
+    left: 24px;
+    bottom: 24px;
+    z-index: 998;
+    padding: 14px 18px;
+    border-radius: 18px;
+    background: rgba(28, 37, 65, 0.62);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+    color: #fff;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    animation: cdFloat 6s ease-in-out infinite;
+  }
+  @keyframes cdFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-7px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #xmas-countdown { animation: none; }
+  }
+  #xmas-countdown .cd-head {
+    font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase;
+    color: #D4AF37; font-weight: 700; margin-bottom: 8px; text-align: center;
+  }
+  #xmas-countdown .cd-grid { display: flex; gap: 12px; }
+  #xmas-countdown .cd-cell { text-align: center; min-width: 40px; }
+  #xmas-countdown .cd-cell strong {
+    display: block; font-size: 21px; font-weight: 700; line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  #xmas-countdown .cd-cell span {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px;
+    color: rgba(255,255,255,0.65);
+  }
+  #xmas-countdown .cd-foot {
+    margin-top: 8px; text-align: center; font-size: 10px;
+    color: rgba(255,255,255,0.55);
+  }
+  @media (max-width: 640px) {
+    #xmas-countdown { left: 12px; bottom: 12px; padding: 10px 13px; }
+    #xmas-countdown .cd-grid { gap: 8px; }
+    #xmas-countdown .cd-cell strong { font-size: 17px; }
+  }
+</style>
+<script>
+(function () {
+  // Ber Months: the Philippine Christmas season is taken to start on
+  // 1 September. Fixed to Philippine time (UTC+8) so the countdown reads the
+  // same for a visitor in Davao and one abroad.
+  const TARGET = Date.parse('2026-09-01T00:00:00+08:00');
+  const box = document.getElementById('xmas-countdown');
+  const el = {
+    d: document.getElementById('cd-d'), h: document.getElementById('cd-h'),
+    m: document.getElementById('cd-m'), s: document.getElementById('cd-s')
+  };
+  const pad = (n) => String(n).padStart(2, '0');
+
+  function tick() {
+    const left = TARGET - Date.now();
+    if (left <= 0) { box.hidden = true; return; }   // season has started
+    const sec = Math.floor(left / 1000);
+    el.d.textContent = Math.floor(sec / 86400);
+    el.h.textContent = pad(Math.floor(sec / 3600) % 24);
+    el.m.textContent = pad(Math.floor(sec / 60) % 60);
+    el.s.textContent = pad(sec % 60);
+    box.hidden = false;
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+
+<script src="./psalms.js"></script>
 <script src="./chat-widget.js"></script>
 </body>
 </html>

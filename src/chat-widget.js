@@ -30,14 +30,14 @@
         font-family: Georgia, Garamond, serif;
         overflow: hidden;
         padding: 0;
-        /* Face crop from portrait-hero.png (480x438). The head sits at about
+        /* Face crop from portrait-hero-santa.png (480x438). The head sits at about
            54% across and 28% down, so the image is scaled up and offset to
            put it in the middle of the circle. Adjust size/position together
            if the artwork is ever replaced. */
-        background-image: url('./portrait-hero.png');
+        background-image: url('./portrait-hero-santa.png');
         background-repeat: no-repeat;
-        background-size: 262%;
-        background-position: 56% 12%;
+        background-size: 280%;
+        background-position: 56% 8%;
       }
       #chat-toggle:hover { transform: scale(1.1); }
       #chat-window {
@@ -124,6 +124,26 @@
         transition: background-color 0.2s;
       }
       #chat-send:hover { background-color: var(--gold); color: var(--navy); }
+      #chat-psalm {
+        padding: 12px 16px;
+        background: #FBF8F0;
+        border-bottom: 1px solid #EDE4CC;
+        font-family: Georgia, Garamond, serif;
+        font-size: 13px;
+        line-height: 1.5;
+        color: #4A4A4A;
+        font-style: italic;
+      }
+      #chat-psalm .ref {
+        display: block;
+        margin-top: 5px;
+        font-style: normal;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        color: var(--gold);
+        font-family: system-ui, sans-serif;
+      }
       .loading { opacity: 0.6; }
     </style>
     <div id="chat-toggle" role="button" tabindex="0" aria-label="Open chat"></div>
@@ -132,6 +152,7 @@
         Mrs. Penky Support
         <div class="subtitle">Products, orders &amp; shipping</div>
       </div>
+      <div id="chat-psalm" hidden></div>
       <div id="chat-messages"></div>
       <div id="chat-input-area">
         <input id="chat-input" type="text" placeholder="Ask about our products..." />
@@ -207,6 +228,19 @@
   input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
   });
+
+  // Psalm of the day, shown above the greeting. Provided by psalms.js; if that
+  // file is missing the block simply stays hidden and the chat still works.
+  const psalmBox = document.getElementById('chat-psalm');
+  const psalm = window.PSALM_OF_THE_DAY;
+  if (psalm && psalm.text) {
+    psalmBox.textContent = '\u201C' + psalm.text + '\u201D';
+    const ref = document.createElement('span');
+    ref.className = 'ref';
+    ref.textContent = psalm.ref;
+    psalmBox.appendChild(ref);
+    psalmBox.hidden = false;
+  }
 
   // Opening line. Shown once when there is no stored conversation, so the
   // customer is greeted and told what the assistant can actually do instead
