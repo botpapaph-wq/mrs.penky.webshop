@@ -27,7 +27,7 @@
 // Deno / Supabase Edge Functions runtime.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { cjRequest, sleep } from "./cj-client.ts";
+import { cjRequest, sleep } from "../_shared/cj-client.ts";
 
 // Search keywords mapped to this storefront's categories (index.html).
 // This list only controls what gets pulled from CJ — adjust freely,

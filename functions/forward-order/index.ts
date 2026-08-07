@@ -27,7 +27,7 @@
 // Deno / Supabase Edge Functions runtime.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { cjRequest } from "./cj-client.ts";
+import { cjRequest } from "../_shared/cj-client.ts";
 
 const PAY_TYPE = 3; // 3 = create order only, no payment triggered at CJ — see header comment
 const FROM_COUNTRY_CODE = Deno.env.get("CJ_FROM_COUNTRY_CODE") ?? "CN";
