@@ -30,13 +30,14 @@
         font-family: Georgia, Garamond, serif;
         overflow: hidden;
         padding: 0;
-      }
-      #chat-toggle img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        padding: 8px;
-        display: block;
+        /* Face crop from portrait-hero.png (480x438). The head sits at about
+           54% across and 28% down, so the image is scaled up and offset to
+           put it in the middle of the circle. Adjust size/position together
+           if the artwork is ever replaced. */
+        background-image: url('./portrait-hero.png');
+        background-repeat: no-repeat;
+        background-size: 262%;
+        background-position: 56% 12%;
       }
       #chat-toggle:hover { transform: scale(1.1); }
       #chat-window {
@@ -125,11 +126,11 @@
       #chat-send:hover { background-color: var(--gold); color: var(--navy); }
       .loading { opacity: 0.6; }
     </style>
-    <div id="chat-toggle" role="button" tabindex="0" aria-label="Open chat"><img src="./logo-header.png" alt="Mrs. Penky" /></div>
+    <div id="chat-toggle" role="button" tabindex="0" aria-label="Open chat"></div>
     <div id="chat-window">
       <div id="chat-header">
-        Prayer & Blessings Support
-        <div class="subtitle">Spiritual guidance always available</div>
+        Mrs. Penky Support
+        <div class="subtitle">Products, orders &amp; shipping</div>
       </div>
       <div id="chat-messages"></div>
       <div id="chat-input-area">
@@ -177,7 +178,7 @@
       renderMessages();
     } catch (err) {
       console.error('Chat error:', err);
-      messages.push({ role: 'assistant', content: '🙏 Please try again. Our spiritual advisors are temporarily unavailable.' });
+      messages.push({ role: 'assistant', content: "Sorry, I can't reach our system right now. Please try again in a moment, or email us at mrs.penkys.webshop@gmail.com." });
       renderMessages();
     }
 
