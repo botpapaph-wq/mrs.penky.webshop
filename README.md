@@ -75,4 +75,4 @@ See `docs/SETUP.md` for detailed setup instructions.
 
 ## License
 
-Proprietary — Copyright 2026 Bodo Kopplin, Mentor GmbH.
+Proprietary — Copyright 2026 Bodo Kopplin & Penky Benaning Kopplin, remotesalesforce.asia.
