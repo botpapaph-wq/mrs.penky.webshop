@@ -2,6 +2,18 @@
 -- Mrs. Penky E-Commerce Platform
 -- Supabase Postgres Schema + RLS
 -- Production: PHP/USD dual-currency, Invoicing via Zoho Books
+--
+-- NAMING: all tables use a penky_ prefix. This project's database is shared
+-- with unrelated systems (intranet, recruiting, RemoteSalesforce, and an
+-- existing PayPal-based "orders" table for a different product) — the
+-- prefix guarantees no collision with anything else in this account.
+--
+-- SECURITY: orders, order_items, webhook_events and integration_tokens get
+-- NO RLS policies for anon/authenticated on purpose. They are only ever
+-- touched via Edge Functions using the service_role key, which bypasses RLS
+-- entirely and needs no policy to do so. A permissive USING(TRUE) policy
+-- here would let the public anon key (embedded in frontend JS) read every
+-- customer's PII and forge/alter order rows — deliberately avoided.
 -- ============================================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -9,7 +21,7 @@ CREATE EXTENSION IF NOT EXISTS "http";
 CREATE EXTENSION IF NOT EXISTS "plpgsql";
 
 -- Store configuration
-CREATE TABLE IF NOT EXISTS public.store_settings (
+CREATE TABLE IF NOT EXISTS public.penky_store_settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   organization_name TEXT NOT NULL DEFAULT 'Mrs. Penky',
   organization_id TEXT NOT NULL DEFAULT '932735549',
@@ -24,7 +36,7 @@ CREATE TABLE IF NOT EXISTS public.store_settings (
 );
 
 -- Products
-CREATE TABLE IF NOT EXISTS public.products (
+CREATE TABLE IF NOT EXISTS public.penky_products (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title TEXT NOT NULL,
   description TEXT,
@@ -40,7 +52,7 @@ CREATE TABLE IF NOT EXISTS public.products (
 );
 
 -- Orders
-CREATE TABLE IF NOT EXISTS public.orders (
+CREATE TABLE IF NOT EXISTS public.penky_orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   customer_name TEXT NOT NULL,
   customer_email TEXT NOT NULL,
@@ -58,19 +70,19 @@ CREATE TABLE IF NOT EXISTS public.orders (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   paid_at TIMESTAMP WITH TIME ZONE,
-  CONSTRAINT email_format CHECK (customer_email ~ '^[^@]+@[^@]+$')
+  CONSTRAINT penky_orders_email_format CHECK (customer_email ~ '^[^@]+@[^@]+$')
 );
 
-CREATE INDEX idx_orders_payment_status ON public.orders(payment_status);
-CREATE INDEX idx_orders_order_status ON public.orders(order_status);
-CREATE INDEX idx_orders_created_at ON public.orders(created_at DESC);
-CREATE INDEX idx_orders_customer_email ON public.orders(customer_email);
+CREATE INDEX idx_penky_orders_payment_status ON public.penky_orders(payment_status);
+CREATE INDEX idx_penky_orders_order_status ON public.penky_orders(order_status);
+CREATE INDEX idx_penky_orders_created_at ON public.penky_orders(created_at DESC);
+CREATE INDEX idx_penky_orders_customer_email ON public.penky_orders(customer_email);
 
 -- Order items
-CREATE TABLE IF NOT EXISTS public.order_items (
+CREATE TABLE IF NOT EXISTS public.penky_order_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
-  product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE RESTRICT,
+  order_id UUID NOT NULL REFERENCES public.penky_orders(id) ON DELETE CASCADE,
+  product_id UUID NOT NULL REFERENCES public.penky_products(id) ON DELETE RESTRICT,
   quantity INTEGER NOT NULL CHECK (quantity > 0),
   unit_price_php NUMERIC(12, 2) NOT NULL CHECK (unit_price_php > 0),
   unit_price_usd NUMERIC(12, 2),
@@ -79,16 +91,16 @@ CREATE TABLE IF NOT EXISTS public.order_items (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_order_items_order_id ON public.order_items(order_id);
-CREATE INDEX idx_order_items_product_id ON public.order_items(product_id);
+CREATE INDEX idx_penky_order_items_order_id ON public.penky_order_items(order_id);
+CREATE INDEX idx_penky_order_items_product_id ON public.penky_order_items(product_id);
 
 -- Webhook events (idempotency)
-CREATE TABLE IF NOT EXISTS public.webhook_events (
+CREATE TABLE IF NOT EXISTS public.penky_webhook_events (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   event_type TEXT NOT NULL,
   gateway TEXT NOT NULL CHECK (gateway IN ('paymongo', 'stripe')),
   external_event_id TEXT NOT NULL UNIQUE,
-  order_id UUID REFERENCES public.orders(id) ON DELETE SET NULL,
+  order_id UUID REFERENCES public.penky_orders(id) ON DELETE SET NULL,
   payload JSONB NOT NULL,
   signature_verified BOOLEAN DEFAULT FALSE,
   processed BOOLEAN DEFAULT FALSE,
@@ -97,12 +109,12 @@ CREATE TABLE IF NOT EXISTS public.webhook_events (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_webhook_events_order_id ON public.webhook_events(order_id);
-CREATE INDEX idx_webhook_events_processed ON public.webhook_events(processed);
-CREATE INDEX idx_webhook_events_gateway ON public.webhook_events(gateway);
+CREATE INDEX idx_penky_webhook_events_order_id ON public.penky_webhook_events(order_id);
+CREATE INDEX idx_penky_webhook_events_processed ON public.penky_webhook_events(processed);
+CREATE INDEX idx_penky_webhook_events_gateway ON public.penky_webhook_events(gateway);
 
 -- Integration tokens (DO NOT expose to frontend)
-CREATE TABLE IF NOT EXISTS public.integration_tokens (
+CREATE TABLE IF NOT EXISTS public.penky_integration_tokens (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   service TEXT NOT NULL UNIQUE CHECK (service IN ('zoho_books', 'paymongo', 'stripe')),
   access_token TEXT NOT NULL,
@@ -116,42 +128,24 @@ CREATE TABLE IF NOT EXISTS public.integration_tokens (
 -- ROW LEVEL SECURITY
 -- ============================================================================
 
-ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.webhook_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.integration_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.penky_store_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.penky_products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.penky_orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.penky_order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.penky_webhook_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.penky_integration_tokens ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "store_settings_public_read" ON public.store_settings FOR SELECT USING (TRUE);
-CREATE POLICY "store_settings_no_write" ON public.store_settings FOR INSERT WITH CHECK (FALSE);
+-- Public, read-only info. Intentionally open.
+CREATE POLICY "penky_store_settings_public_read" ON public.penky_store_settings FOR SELECT USING (TRUE);
+CREATE POLICY "penky_products_public_read_active" ON public.penky_products FOR SELECT USING (active = TRUE);
 
-CREATE POLICY "products_public_read_active" ON public.products FOR SELECT USING (active = TRUE);
-CREATE POLICY "products_no_write" ON public.products FOR INSERT WITH CHECK (FALSE);
-
-CREATE POLICY "orders_read_all" ON public.orders FOR SELECT USING (TRUE);
-CREATE POLICY "orders_insert" ON public.orders FOR INSERT WITH CHECK (TRUE);
-CREATE POLICY "orders_update" ON public.orders FOR UPDATE USING (TRUE) WITH CHECK (TRUE);
-
-CREATE POLICY "order_items_read" ON public.order_items FOR SELECT USING (TRUE);
-CREATE POLICY "order_items_insert" ON public.order_items FOR INSERT WITH CHECK (TRUE);
-
-CREATE POLICY "webhook_events_insert" ON public.webhook_events FOR INSERT WITH CHECK (TRUE);
-CREATE POLICY "webhook_events_update" ON public.webhook_events FOR UPDATE USING (TRUE) WITH CHECK (TRUE);
-
-CREATE POLICY "integration_tokens_insert" ON public.integration_tokens FOR INSERT WITH CHECK (TRUE);
-CREATE POLICY "integration_tokens_update" ON public.integration_tokens FOR UPDATE USING (TRUE) WITH CHECK (TRUE);
+-- penky_orders / penky_order_items / penky_webhook_events / penky_integration_tokens:
+-- NO policies for anon/authenticated on purpose. Only Edge Functions
+-- (service_role, which bypasses RLS) may read or write these tables.
 
 -- ============================================================================
 -- SEED DATA
 -- ============================================================================
 
-INSERT INTO public.store_settings (organization_name, organization_id, currency_php_id, currency_usd_id, ai_chat_enabled, invoice_auto_enabled)
+INSERT INTO public.penky_store_settings (organization_name, organization_id, currency_php_id, currency_usd_id, ai_chat_enabled, invoice_auto_enabled)
 VALUES ('Mrs. Penky', '932735549', '1097528000000097085', '1097528000000000097', TRUE, TRUE) ON CONFLICT DO NOTHING;
-
-INSERT INTO public.products (title, description, price_php, price_usd, stock_quantity, category, sku, active) VALUES
-('Premium Pensky Tote', 'Luxury handmade tote bag, genuine leather', 2999.00, 54.00, 50, 'bags', 'PENSTOTE-001', TRUE),
-('Classic Pensky Wallet', 'RFID-blocking slim wallet', 1299.00, 23.50, 100, 'wallets', 'PENSWALLET-001', TRUE),
-('Limited Edition Key Chain', 'Brass and leather key fob', 599.00, 10.75, 25, 'accessories', 'PENSKEYCHAIN-LTD', TRUE),
-('Pensky Travel Case', 'Durable carry-on organizer', 4999.00, 90.00, 15, 'bags', 'PENSCASE-TRAVEL', TRUE)
-ON CONFLICT (sku) DO NOTHING;

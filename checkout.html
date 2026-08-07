@@ -41,17 +41,44 @@
       </div>
 
       <div>
-        <label class="block text-sm font-bold navy mb-2">Shipping Address</label>
-        <textarea name="shipping_address" rows="3" required class="w-full px-4 py-2 border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="Street, City, Province, Postal Code"></textarea>
+        <label class="block text-sm font-bold navy mb-2">Street Address</label>
+        <textarea name="shipping_address" rows="2" required class="w-full px-4 py-2 border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="House/unit no., street, barangay"></textarea>
       </div>
 
-      <div>
-        <label class="block text-sm font-bold navy mb-2">Currency</label>
-        <select name="currency" class="w-full px-4 py-2 border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400">
-          <option value="PHP">PHP - Philippine Peso</option>
-          <option value="USD">USD - US Dollar</option>
-        </select>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-bold navy mb-2">City</label>
+          <input type="text" name="shipping_city" required class="w-full px-4 py-2 border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+        </div>
+        <div>
+          <label class="block text-sm font-bold navy mb-2">Province</label>
+          <input type="text" name="shipping_province" required class="w-full px-4 py-2 border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+        </div>
       </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-bold navy mb-2">Postal Code</label>
+          <input type="text" name="shipping_zip" class="w-full px-4 py-2 border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400" />
+        </div>
+        <div>
+          <label class="block text-sm font-bold navy mb-2">Country</label>
+          <select name="shipping_country_code" class="w-full px-4 py-2 border-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400">
+            <option value="PH" selected>Philippines</option>
+            <option value="SG">Singapore</option>
+            <option value="MY">Malaysia</option>
+            <option value="ID">Indonesia</option>
+            <option value="TH">Thailand</option>
+            <option value="VN">Vietnam</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Order pricing is always in PHP (penky_products.price_php is the
+           authoritative, server-re-priced amount) — no currency picker
+           needed here; removed to avoid implying the customer can pay in
+           USD when create-checkout-session.ts always charges PHP. -->
+      <input type="hidden" name="currency" value="PHP" />
 
       <div>
         <label class="block text-sm font-bold navy mb-3">Payment Method</label>
@@ -87,14 +114,17 @@
   </div>
 
   <script>
-    const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
-    const EDGE_FUNCTION_URL = 'https://YOUR_PROJECT.supabase.co/functions/v1/create-checkout-session';
+    const SUPABASE_URL = 'https://jvujmlssgnqawqqaeqnb.supabase.co';
+    const EDGE_FUNCTION_URL = 'https://jvujmlssgnqawqqaeqnb.supabase.co/functions/v1/create-checkout-session';
 
     let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 
     function renderSummary() {
       const summary = document.getElementById('orderSummary');
-      const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      // Displayed for the customer's convenience only — the authoritative
+      // price is always re-looked-up server-side in create-checkout-session.ts
+      // from penky_products, never trusted from this cart data.
+      const total = cart.reduce((sum, item) => sum + item.price_php * item.quantity, 0);
       document.getElementById('totalAmount').textContent = '₱' + total.toLocaleString();
 
       if (cart.length === 0) {
@@ -103,7 +133,7 @@
         summary.innerHTML = cart.map((item) => `
           <div class="flex justify-between">
             <span>${item.title} × ${item.quantity}</span>
-            <span class="font-semibold">₱${(item.price * item.quantity).toLocaleString()}</span>
+            <span class="font-semibold">₱${(item.price_php * item.quantity).toLocaleString()}</span>
           </div>
         `).join('');
       }
@@ -124,7 +154,10 @@
         customer_email: formData.get('customer_email'),
         customer_phone: formData.get('customer_phone'),
         shipping_address: formData.get('shipping_address'),
-        currency: formData.get('currency'),
+        shipping_city: formData.get('shipping_city'),
+        shipping_province: formData.get('shipping_province'),
+        shipping_zip: formData.get('shipping_zip'),
+        shipping_country_code: formData.get('shipping_country_code'),
         payment_method: formData.get('payment_method'),
         success_url: `${window.location.origin}/success.html`,
         cancel_url: `${window.location.origin}/checkout.html`,

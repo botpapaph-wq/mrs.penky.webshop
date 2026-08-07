@@ -114,8 +114,8 @@
         <button class="px-7 py-3.5 rounded-full font-semibold pill-btn-outline">View Collection</button>
       </div>
     </div>
-    <div class="hidden lg:flex flex-col items-center" style="max-width: 200px; margin: 0 auto;">
-      <img src="./portrait-hero.png" alt="Mrs. Penky" class="hero-portrait" style="width: 100%; display:block;" />
+    <div class="hidden lg:flex flex-col items-center" style="width: 180px; margin: 0 auto;">
+      <img src="./logo-large.png" alt="Mrs. Penky" class="hero-portrait" style="width: 180px; height: auto; display:block; object-fit: contain;" />
       <div class="float-card p-5 flex items-center gap-4 shadow-2xl mt-4" style="width: 100%;">
         <div class="w-12 h-12 rounded-full flex-shrink-0" style="background: linear-gradient(135deg,#C9A961,#8A7442);"></div>
         <div>
@@ -209,8 +209,10 @@
     </div>
     <div>
       <p class="text-xs font-bold uppercase tracking-wide text-white/40 mb-3">Legal</p>
-      <div class="space-y-2 text-sm text-white/70">
-        <p>Terms of Service</p><p>Privacy Policy</p><p>Refund Policy</p>
+      <div class="space-y-2 text-sm">
+        <p><a href="./terms.html" class="text-white/70 hover:text-white">Terms of Service</a></p>
+        <p><a href="./privacy.html" class="text-white/70 hover:text-white">Privacy Policy</a></p>
+        <p><a href="./refund.html" class="text-white/70 hover:text-white">Refund Policy</a></p>
       </div>
     </div>
   </div>
@@ -236,49 +238,197 @@
   </div>
 </div>
 
+<!-- Product Detail Modal -->
+<div id="productModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background: rgba(28,37,65,0.65);">
+  <div class="bg-white rounded-2xl w-full overflow-hidden relative" style="max-width: 720px; max-height: 88vh; overflow-y: auto;">
+    <button id="closeModal" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-white shadow flex items-center justify-center text-2xl text-gray-500 hover:text-gray-800 z-10" style="line-height:1;">&times;</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
 <script>
-let products = [
-  { id: 'cross-001', title: 'Wooden Prayer Cross', desc: 'Hand-carved olive wood', price_php: 599, category: 'crosses' },
-  { id: 'cross-002', title: 'Carved Spiritual Cross', desc: 'Traditional design', price_php: 899, category: 'crosses' },
-  { id: 'rosary-001', title: 'Car Rosary - Jesus', desc: 'Blessed for travel', price_php: 399, category: 'rosaries' },
-  { id: 'rosary-002', title: 'Daily Rosary Beads', desc: 'For daily meditation', price_php: 549, category: 'rosaries' },
-  { id: 'bracelet-001', title: 'Prayer Bracelet', desc: 'Engraved with intention', price_php: 799, category: 'bracelets' },
-  { id: 'light-001', title: 'LED Devotional Light', desc: 'Sacred illumination', price_php: 1299, category: 'lights' },
-  { id: 'light-002', title: 'Spiritual Night Light', desc: 'Blessed light', price_php: 1299, category: 'lights' },
-  { id: 'bracelet-002', title: 'Beaded Blessing Bracelet', desc: 'Handmade with care', price_php: 649, category: 'bracelets' }
-];
+// Products are loaded live from Supabase (public.penky_products, RLS
+// allows anon SELECT where active=true) instead of a hardcoded array, so
+// the CJ Dropshipping sync (sync-products.ts) is reflected here without
+// touching this file again. The publishable key below is safe to embed in
+// frontend JS by design — it only allows what RLS policies permit (public
+// read of active products and store settings; nothing else).
+const SUPABASE_URL = 'https://jvujmlssgnqawqqaeqnb.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Pz1nN4P4NsbIEdtWrwjQRw_X01Mq1Fb';
+
+let products = [];
+// Cart items use product_id/quantity/price_php to match the shape
+// checkout.html and create-checkout-session.ts already expect.
 let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 let currentFilter = 'all';
+
+async function loadProducts() {
+  const grid = document.getElementById('productsGrid');
+  grid.innerHTML = '<p class="text-sm text-gray-400 col-span-full text-center py-10">Loading products…</p>';
+  try {
+    // description is intentionally NOT selected here: CJ's raw description
+    // field is a full rich-HTML spec sheet (up to ~30KB, with embedded
+    // tables/images meant for a product detail page) -- rendering it in the
+    // grid card blew up card height into long unreadable columns. Cards
+    // show title + price only for now; a future product detail page can
+    // fetch and sanitize the full description separately.
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/penky_products?select=id,title,price_php,image_urls,category&order=created_at.asc`,
+      { headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}` } },
+    );
+    if (!res.ok) throw new Error(`Supabase returned ${res.status}`);
+    products = await res.json();
+  } catch (err) {
+    console.error('Failed to load products from Supabase:', err);
+    products = [];
+  }
+  renderProducts();
+}
 
 function renderProducts() {
   const grid = document.getElementById('productsGrid');
   const filtered = currentFilter === 'all' ? products : products.filter(p => p.category === currentFilter);
-  grid.innerHTML = filtered.map(p => `
-    <div class="product-card overflow-hidden">
-      <div class="product-image"></div>
-      <div class="p-5">
-        <h3 class="font-semibold navy mb-1 text-sm">${p.title}</h3>
-        <p class="text-xs text-gray-500 mb-4">${p.desc}</p>
-        <div class="flex justify-between items-center">
-          <span class="text-lg font-bold gold">&#8369;${p.price_php.toLocaleString()}</span>
-          <button onclick="addToCart('${p.id}','${p.title}',${p.price_php})" class="navy-bg text-white px-3.5 py-2 rounded-full text-xs font-semibold hover:opacity-90">Add</button>
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<p class="text-sm text-gray-400 col-span-full text-center py-10">New blessings arriving soon — check back shortly.</p>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(p => {
+    const image = (p.image_urls && p.image_urls[0])
+      ? `<img src="${p.image_urls[0]}" alt="${escapeAttr(p.title)}" class="product-image" style="object-fit:cover;background:none;" />`
+      : `<div class="product-image"></div>`;
+    return `
+    <div class="product-card overflow-hidden flex flex-col">
+      <div data-open-modal="${p.id}" class="cursor-pointer flex flex-col flex-1">
+        ${image}
+        <div class="p-5 flex flex-col flex-1">
+          <h3 class="font-semibold navy mb-4 text-sm line-clamp-2" style="min-height: 2.6em;">${p.title}</h3>
+          <div class="flex justify-between items-center mt-auto">
+            <span class="text-lg font-bold gold">&#8369;${Number(p.price_php).toLocaleString()}</span>
+            <button data-add-to-cart="${p.id}" class="navy-bg text-white px-3.5 py-2 rounded-full text-xs font-semibold hover:opacity-90">Add</button>
+          </div>
         </div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 function filterCategory(cat) { currentFilter = cat; renderProducts(); }
-function addToCart(id, title, price) {
-  const existing = cart.find(i => i.id === id);
-  if (existing) existing.qty++;
-  else cart.push({ id, title, price, qty: 1 });
+
+// Defensive: escape quotes so a CJ title containing a literal " can't break
+// out of an alt="..." attribute the same way the old onclick bug did.
+function escapeAttr(str) {
+  return String(str ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
+// Single delegated click handler for both the grid and the modal --
+// avoids inline onclick="..." with interpolated title strings entirely.
+// (Previous version used onclick="addToCart('id', ${JSON.stringify(title)}, ...)"
+// -- JSON.stringify always wraps in double quotes, which broke out of the
+// already double-quoted onclick="..." HTML attribute on every product,
+// silently truncating the handler so clicking Add did nothing at all.)
+document.addEventListener('click', (e) => {
+  const addTrigger = e.target.closest('[data-add-to-cart]');
+  if (addTrigger) {
+    addToCart(addTrigger.dataset.addToCart);
+    if (addTrigger.closest('#productModal')) closeProductModal();
+    return;
+  }
+  const openTrigger = e.target.closest('[data-open-modal]');
+  if (openTrigger) {
+    openProductModal(openTrigger.dataset.openModal);
+    return;
+  }
+});
+
+let currentModalProductId = null;
+
+function openProductModal(product_id) {
+  const p = products.find(x => x.id === product_id);
+  if (!p) return;
+  currentModalProductId = product_id;
+  const image = (p.image_urls && p.image_urls[0])
+    ? `<img src="${p.image_urls[0]}" alt="${escapeAttr(p.title)}" style="width:100%;height:100%;object-fit:cover;" />`
+    : `<div class="product-image" style="width:100%;height:100%;border-radius:0;"></div>`;
+  document.getElementById('modalContent').innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-2">
+      <div style="aspect-ratio:1;">${image}</div>
+      <div class="p-8 flex flex-col">
+        <p class="text-xs tracking-widest gold uppercase font-semibold mb-3">${p.category || ''}</p>
+        <h2 class="text-xl font-bold navy mb-3 leading-snug">${p.title}</h2>
+        <p class="text-3xl font-bold gold mb-4">&#8369;${Number(p.price_php).toLocaleString()}</p>
+        <p id="modalDescription" class="text-sm text-gray-500 mb-6 leading-relaxed">Loading description…</p>
+        <button data-add-to-cart="${p.id}" class="w-full py-3.5 rounded-full font-semibold pill-btn-primary mt-auto">Add to Cart</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('productModal').classList.remove('hidden');
+  document.getElementById('productModal').classList.add('flex');
+  loadProductDescription(product_id);
+}
+
+// Strips HTML tags AND decodes entities (&nbsp;, &amp;, ...) by letting the
+// browser's own HTML parser do it, instead of a regex that only removes
+// tags and leaves entity codes as literal text (e.g. "Material:&nbsp;wood"
+// showing up verbatim). The detached <div> is never inserted into the
+// document, so nothing renders or executes from it.
+function stripHtmlToText(html) {
+  const spaced = html.replace(/></g, '> <'); // keep words from gluing together across adjacent tags
+  const div = document.createElement('div');
+  div.innerHTML = spaced;
+  return (div.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+// Description is fetched on-demand per product (not in the bulk grid load)
+// because CJ's raw description field is a full rich-HTML spec sheet, up to
+// ~30KB with embedded tables/images -- fine for one product on request,
+// too much for 80 products up front. Stripped of HTML tags and truncated
+// here since it's meant for a product detail page, not plain text.
+async function loadProductDescription(product_id) {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/penky_products?id=eq.${product_id}&select=description`,
+      { headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}` } },
+    );
+    const rows = await res.json();
+    const raw = rows?.[0]?.description || '';
+    const text = stripHtmlToText(raw);
+    if (currentModalProductId !== product_id) return; // user already moved on
+    const el = document.getElementById('modalDescription');
+    if (!el) return;
+    el.textContent = text ? (text.length > 500 ? text.slice(0, 500).trim() + '…' : text) : 'No description available.';
+  } catch (err) {
+    console.error('Failed to load description:', err);
+    if (currentModalProductId !== product_id) return;
+    const el = document.getElementById('modalDescription');
+    if (el) el.textContent = '';
+  }
+}
+
+function closeProductModal() {
+  currentModalProductId = null;
+  document.getElementById('productModal').classList.add('hidden');
+  document.getElementById('productModal').classList.remove('flex');
+}
+document.getElementById('closeModal').addEventListener('click', closeProductModal);
+document.getElementById('productModal').addEventListener('click', (e) => {
+  if (e.target.id === 'productModal') closeProductModal();
+});
+
+function addToCart(product_id) {
+  const product = products.find(p => p.id === product_id);
+  if (!product) return;
+  const existing = cart.find(i => i.product_id === product_id);
+  if (existing) existing.quantity++;
+  else cart.push({ product_id, title: product.title, price_php: product.price_php, quantity: 1 });
   localStorage.setItem('cart', JSON.stringify(cart));
   updateCart();
   document.getElementById('cartSidebar').classList.remove('translate-x-full');
 }
 function updateCart() {
-  const count = cart.reduce((s,i)=>s+i.qty,0);
-  const total = cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const count = cart.reduce((s,i)=>s+i.quantity,0);
+  const total = cart.reduce((s,i)=>s+i.price_php*i.quantity,0);
   document.getElementById('cartCount').textContent = '('+count+')';
   document.getElementById('cartTotal').textContent = total.toLocaleString();
   const items = document.getElementById('cartItems');
@@ -291,7 +441,7 @@ function updateCart() {
           <p class="font-medium navy text-sm">${i.title}</p>
           <button onclick="removeFromCart(${idx})" class="text-gray-400 hover:text-red-500 text-xs">Remove</button>
         </div>
-        <p class="text-xs text-gray-500">&#8369;${i.price.toLocaleString()} × ${i.qty}</p>
+        <p class="text-xs text-gray-500">&#8369;${i.price_php.toLocaleString()} × ${i.quantity}</p>
       </div>
     `).join('');
   }
@@ -300,7 +450,7 @@ function removeFromCart(idx) { cart.splice(idx,1); localStorage.setItem('cart', 
 document.getElementById('cartBtn').addEventListener('click', () => document.getElementById('cartSidebar').classList.toggle('translate-x-full'));
 document.getElementById('closeCart').addEventListener('click', () => document.getElementById('cartSidebar').classList.add('translate-x-full'));
 document.getElementById('continueShopping').addEventListener('click', () => document.getElementById('cartSidebar').classList.add('translate-x-full'));
-renderProducts();
+loadProducts();
 updateCart();
 </script>
 </body>
