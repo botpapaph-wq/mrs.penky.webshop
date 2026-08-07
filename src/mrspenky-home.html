@@ -101,13 +101,13 @@
     <div>
       <div class="inline-flex items-center gap-2 badge-pill rounded-full px-4 py-1.5 mb-6">
         <span class="w-1.5 h-1.5 rounded-full gold-bg"></span>
-        <span class="text-xs font-medium gold">New: Handcrafted Fall Collection</span>
+        <span class="text-xs font-medium gold">New: Fall Collection</span>
       </div>
       <h1 class="text-5xl lg:text-6xl font-bold text-white leading-[1.08] mb-6" style="letter-spacing:-1px;">
-        Faith, handcrafted<br/>with grace —<br/>blessed for you.
+        Faith, carried<br/>with grace —<br/>close to the heart.
       </h1>
       <p class="text-lg text-white/80 max-w-lg mb-8 leading-relaxed">
-        Not mass-produced goods — genuine spiritual companions. Handcrafted crosses, rosaries, and blessed keepsakes for your everyday devotion. Shipping across the Philippines and Southeast Asia.
+        Devotional pieces chosen with care — crosses, rosaries, and keepsakes for your everyday faith. Shipping across the Philippines and Southeast Asia.
       </p>
       <div class="flex flex-wrap gap-3">
         <button onclick="document.getElementById('shop').scrollIntoView({behavior:'smooth'})" class="px-7 py-3.5 rounded-full font-semibold pill-btn-primary">Shop Now →</button>
@@ -129,16 +129,16 @@
 
 <!-- Value section -->
 <section class="max-w-7xl mx-auto px-6 py-20">
-  <p class="text-xs tracking-[3px] gold uppercase font-semibold mb-4">Handcrafted · Blessed · Shipped Across Asia</p>
+  <p class="text-xs tracking-[3px] gold uppercase font-semibold mb-4">Devotional · Thoughtfully Chosen · Shipped Across Asia</p>
   <h2 class="text-4xl font-bold navy mb-6 max-w-2xl" style="letter-spacing:-0.5px;">Spiritual gifts that truly mean something.</h2>
-  <p class="text-gray-600 max-w-2xl mb-12 leading-relaxed">Every product is carefully sourced, blessed with intention, and delivered straight to your door — anywhere in the Philippines and Southeast Asia.</p>
+  <p class="text-gray-600 max-w-2xl mb-12 leading-relaxed">Every product is carefully selected, thoughtfully packed, and delivered straight to your door — anywhere in the Philippines and Southeast Asia.</p>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-5">
     <div>
       <p class="text-sm font-bold navy uppercase tracking-wide mb-4">What we offer</p>
       <div class="space-y-4">
-        <div class="flex gap-3"><span class="check-dot">✓</span><p class="text-sm text-gray-700"><strong class="navy">Handcrafted quality:</strong> every piece individually made.</p></div>
+        <div class="flex gap-3"><span class="check-dot">✓</span><p class="text-sm text-gray-700"><strong class="navy">Carefully selected:</strong> every piece chosen for quality and detail.</p></div>
         <div class="flex gap-3"><span class="check-dot">✓</span><p class="text-sm text-gray-700"><strong class="navy">Fast local shipping:</strong> secured packaging, quick delivery across the Philippines.</p></div>
-        <div class="flex gap-3"><span class="check-dot">✓</span><p class="text-sm text-gray-700"><strong class="navy">Blessed with intention:</strong> spiritual meaning in every detail.</p></div>
+        <div class="flex gap-3"><span class="check-dot">✓</span><p class="text-sm text-gray-700"><strong class="navy">Chosen with intention:</strong> spiritual meaning in every detail.</p></div>
       </div>
     </div>
     <div>
@@ -193,7 +193,7 @@
         <img src="../pics/logo-header.png" alt="Mrs. Penky" style="height: 32px; width: auto; filter: brightness(0) invert(1);" />
         <p class="text-lg font-bold">Mrs. <span class="gold">Penky</span></p>
       </div>
-      <p class="text-sm text-white/50 leading-relaxed">Handcrafted spiritual gifts. Shipping across the Philippines and Southeast Asia.</p>
+      <p class="text-sm text-white/50 leading-relaxed">Devotional gifts and keepsakes. Shipping across the Philippines and Southeast Asia.</p>
     </div>
     <div>
       <p class="text-xs font-bold uppercase tracking-wide text-white/40 mb-3">Shop</p>
@@ -240,12 +240,12 @@
 let products = [
   { id: 'cross-001', title: 'Wooden Prayer Cross', desc: 'Hand-carved olive wood', price_php: 599, category: 'crosses' },
   { id: 'cross-002', title: 'Carved Spiritual Cross', desc: 'Traditional design', price_php: 899, category: 'crosses' },
-  { id: 'rosary-001', title: 'Car Rosary - Jesus', desc: 'Blessed for travel', price_php: 399, category: 'rosaries' },
+  { id: 'rosary-001', title: 'Car Rosary - Jesus', desc: 'A companion for the road', price_php: 399, category: 'rosaries' },
   { id: 'rosary-002', title: 'Daily Rosary Beads', desc: 'For daily meditation', price_php: 549, category: 'rosaries' },
   { id: 'bracelet-001', title: 'Prayer Bracelet', desc: 'Engraved with intention', price_php: 799, category: 'bracelets' },
   { id: 'light-001', title: 'LED Devotional Light', desc: 'Sacred illumination', price_php: 1299, category: 'lights' },
-  { id: 'light-002', title: 'Spiritual Night Light', desc: 'Blessed light', price_php: 1299, category: 'lights' },
-  { id: 'bracelet-002', title: 'Beaded Blessing Bracelet', desc: 'Handmade with care', price_php: 649, category: 'bracelets' }
+  { id: 'light-002', title: 'Spiritual Night Light', desc: 'Soft devotional light', price_php: 1299, category: 'lights' },
+  { id: 'bracelet-002', title: 'Beaded Blessing Bracelet', desc: 'Chosen with care', price_php: 649, category: 'bracelets' }
 ];
 let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 let currentFilter = 'all';
