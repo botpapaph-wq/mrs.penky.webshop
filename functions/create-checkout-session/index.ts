@@ -45,6 +45,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { paypalRequest, money } from "../_shared/paypal.ts";
+import { quoteShipping, freeShippingThresholdPhp } from "../_shared/shipping.ts";
 
 const PAYMONGO_SECRET_KEY = Deno.env.get("PAYMONGO_SECRET_KEY") ?? "";
 
@@ -198,6 +199,32 @@ Deno.serve(async (req) => {
       cart_total_php: totalPhp,
     }, 400);
   }
+
+  // Shipping. Quoted here as well, not taken from the browser: the amount
+  // charged has to come from the same source as the parcel we actually book,
+  // otherwise the difference lands in the margin. Uses the same helper the
+  // checkout page called, so the customer is charged what they were shown.
+  const threshold = await freeShippingThresholdPhp(supabase);
+  const freeShipping = totalPhp >= threshold;
+
+  const shippingQuote = await quoteShipping(
+    supabase,
+    body.shipping_country_code ?? "PH",
+    body.items.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
+    body.shipping_zip,
+  );
+
+  // A destination no carrier serves must fail before payment, not after --
+  // forward-order would otherwise be stuck with a paid, unshippable order.
+  if (shippingQuote.quotable && !shippingQuote.deliverable) {
+    return json({
+      error: "We cannot ship to this destination at the moment.",
+      destination: body.shipping_country_code ?? "PH",
+    }, 400);
+  }
+
+  const shippingPhp = freeShipping ? 0 : (shippingQuote.chosen?.price_php ?? 0);
+  const grandTotalPhp = totalPhp + shippingPhp;
   const allHaveUsd = items.every((i) => i.unit_price_usd !== null);
   const totalUsd = allHaveUsd ? items.reduce((sum, i) => sum + i.unit_price_usd! * i.quantity, 0) : null;
 
@@ -215,7 +242,10 @@ Deno.serve(async (req) => {
       shipping_province: body.shipping_province ?? null,
       shipping_country_code: body.shipping_country_code ?? "PH",
       shipping_zip: body.shipping_zip ?? null,
-      total_amount_php: totalPhp,
+      total_amount_php: grandTotalPhp,
+      subtotal_php: totalPhp,
+      shipping_fee_php: shippingPhp,
+      shipping_method: shippingQuote.chosen?.method ?? null,
       total_amount_usd: totalUsd,
       currency_code: "PHP",
       primary_currency: "PHP",
@@ -245,8 +275,8 @@ Deno.serve(async (req) => {
   try {
     const checkoutUrl =
       body.payment_method === "paymongo"
-        ? await createPayMongoCheckoutSession(order.id, body, items)
-        : await createPayPalOrder(order.id, body, items);
+        ? await createPayMongoCheckoutSession(order.id, body, items, shippingPhp)
+        : await createPayPalOrder(order.id, body, items, shippingPhp);
 
     return json({ checkout_url: checkoutUrl, order_id: order.id });
   } catch (err) {
@@ -261,6 +291,7 @@ async function createPayMongoCheckoutSession(
   orderId: string,
   body: CheckoutRequestBody,
   items: PricedItem[],
+  shippingPhp: number,
 ): Promise<string> {
   const lineItems = items.map((i) => ({
     amount: Math.round(i.unit_price_php * 100), // centavos — PHP is the only supported currency
@@ -273,7 +304,16 @@ async function createPayMongoCheckoutSession(
   const payload = {
     data: {
       attributes: {
-        line_items: lineItems,
+        // Shipping as its own line rather than spread across the products,
+        // so the customer sees on the receipt what postage cost.
+        line_items: shippingPhp > 0
+          ? [...lineItems, {
+              amount: Math.round(shippingPhp * 100),
+              currency: "PHP",
+              name: "Shipping",
+              quantity: 1,
+            }]
+          : lineItems,
         payment_method_types: ["card", "gcash", "paymaya"],
         reference_number: orderId,
         success_url: body.success_url,
@@ -321,6 +361,7 @@ async function createPayPalOrder(
   orderId: string,
   body: CheckoutRequestBody,
   items: PricedItem[],
+  shippingPhp: number,
 ): Promise<string> {
   // Line items are re-priced server-side before this point, so the totals
   // here are authoritative -- never taken from the browser.
@@ -345,9 +386,12 @@ async function createPayPalOrder(
             description: "Mrs. Penky order",
             amount: {
               currency_code: "PHP",
-              value: money(itemTotal),
+              value: money(itemTotal + shippingPhp),
               breakdown: {
                 item_total: { currency_code: "PHP", value: money(itemTotal) },
+                // PayPal shows this as a separate line, so the customer sees
+                // the same split as on our checkout page.
+                shipping: { currency_code: "PHP", value: money(shippingPhp) },
               },
             },
             items: items.map((it) => ({

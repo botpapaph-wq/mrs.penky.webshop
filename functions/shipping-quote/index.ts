@@ -1,30 +1,20 @@
 // index.ts (shipping-quote)
 // Supabase Edge Function: returns real shipping options for a cart and a
-// destination, by asking CJ Dropshipping's freight calculation endpoint.
+// destination, plus the free-shipping threshold, so the checkout page can
+// show the customer what postage will cost before they pay.
 //
-// This is the server-side equivalent of CJ's own shipping calculator
-// (cjdropshipping.com/calculation.html). It is NOT a copy of their page:
-// the CJ access token must never reach the browser, so the call is made
-// here and only the resulting options are returned.
+// The actual calculation lives in ../_shared/shipping.ts, shared with
+// create-checkout-session. Displayed price and charged price must never come
+// from two different implementations.
 //
-// CJ endpoint (checked 2026-08-08):
-//   POST https://developers.cjdropshipping.com/api2.0/v1/logistic/freightCalculate
-//   { startCountryCode, endCountryCode, products: [{ quantity, vid }] }
+// The CJ access token stays server-side; only the result is returned.
 //
-// Why this exists:
-//   - shipping.html promises the cost is shown before payment; nothing
-//     calculated it, so every international order lost the shipping cost.
-//   - forward-order.ts used one hardcoded logisticName for every destination.
-//     If that method does not serve the country, CJ rejects the order AFTER
-//     the customer has paid. Quoting first surfaces that before checkout.
-//
-// Required secrets: CJ_API_KEY (via _shared/cj-client.ts), SUPABASE_URL,
-// SUPABASE_SERVICE_ROLE_KEY.
+// Required secrets: CJ_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 //
 // Deno / Supabase Edge Functions runtime.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { cjRequest } from "../_shared/cj-client.ts";
+import { quoteShipping, freeShippingThresholdPhp } from "../_shared/shipping.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -39,145 +29,39 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-interface CartLine {
-  product_id: string;
-  quantity: number;
-}
-
-interface QuoteRequest {
-  end_country_code: string;
-  items: CartLine[];
-  zip?: string;
-}
-
-// Field names verified against a live response from CJ's own calculator
-// (CN -> PH, 200 g) on 2026-08-08. They are NOT the names the docs imply:
-// the price is "price" (USD), not "logisticPrice", and the delivery window
-// is "aging" ("5-7"), not "logisticAging". Guessing here returned an empty
-// list that looked exactly like "no delivery possible".
-interface CjFreightOption {
-  logisticName?: string;
-  price?: number | string;        // USD
-  cnprice?: number | string;      // CNY
-  aging?: string;                 // e.g. "5-7" (days)
-  remoteFee?: number | string;    // surcharge for remote areas
-  remark?: string;
-  arrivalTimeRanges?: { minDays?: string; maxDays?: string; ratio?: string }[];
-}
-
-// CJ prices are quoted in USD. The shop charges PHP, so the quote is
-// converted with a rate held in penky_store_settings -- never hardcoded,
-// because a stale rate silently eats the margin.
-async function usdToPhpRate(supabase: ReturnType<typeof createClient>): Promise<number> {
-  const { data } = await supabase
-    .from("penky_store_settings")
-    .select("value")
-    .eq("key", "usd_php_rate")
-    .maybeSingle();
-
-  const rate = Number(data?.value);
-  if (!Number.isFinite(rate) || rate <= 0) {
-    throw new Error("usd_php_rate is not set in penky_store_settings");
-  }
-  return rate;
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
-    const body = (await req.json()) as QuoteRequest;
-
-    const destination = String(body.end_country_code ?? "").trim().toUpperCase();
-    if (!/^[A-Z]{2}$/.test(destination)) {
-      return json({ error: "end_country_code must be a 2-letter ISO country code" }, 400);
-    }
-    if (!Array.isArray(body.items) || body.items.length === 0) {
-      return json({ error: "items must be a non-empty array" }, 400);
-    }
+    const body = await req.json();
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Resolve our product ids to CJ variant ids. Never trust a vid sent by
-    // the browser -- it would let anyone quote arbitrary CJ products.
-    const ids = body.items.map((i) => i.product_id);
-    const { data: products, error } = await supabase
-      .from("penky_products")
-      .select("id, cj_variant_id, title")
-      .in("id", ids);
-
-    if (error) return json({ error: `Product lookup failed: ${error.message}` }, 500);
-
-    const vidById = new Map(
-      (products ?? []).filter((p) => p.cj_variant_id).map((p) => [p.id, p.cj_variant_id as string]),
+    const quote = await quoteShipping(
+      supabase,
+      body.end_country_code,
+      body.items ?? [],
+      body.zip,
     );
 
-    const cjProducts = body.items
-      .filter((i) => vidById.has(i.product_id))
-      .map((i) => ({ vid: vidById.get(i.product_id)!, quantity: Math.max(1, Number(i.quantity) || 1) }));
-
-    if (cjProducts.length === 0) {
-      // Nothing in the cart is mapped to CJ yet -- say so plainly rather
-      // than returning an empty list that reads like "no delivery possible".
-      return json({
-        quotable: false,
-        reason: "none_of_the_items_are_linked_to_a_supplier_variant",
-        options: [],
-      });
-    }
-
-    const options = await cjRequest<CjFreightOption[]>("/logistic/freightCalculate", {
-      method: "POST",
-      body: JSON.stringify({
-        startCountryCode: "CN",
-        endCountryCode: destination,
-        products: cjProducts,
-        ...(body.zip ? { zip: body.zip } : {}),
-      }),
-    });
-
-    if (!Array.isArray(options) || options.length === 0) {
-      // No carrier serves this destination for this cart. This is the answer
-      // the checkout needs BEFORE taking money.
-      return json({ quotable: true, deliverable: false, options: [] });
-    }
-
-    const rate = await usdToPhpRate(supabase);
-
-    const normalised = options
-      .map((o) => {
-        const usd = Number(o.price ?? NaN);
-        const remote = Number(o.remoteFee ?? 0) || 0;
-        const totalUsd = Number.isFinite(usd) ? usd + remote : NaN;
-        // The most likely arrival window is the range CJ gives the highest
-        // ratio to, which is more honest than the headline "aging" span.
-        const likely = (o.arrivalTimeRanges ?? [])
-          .slice()
-          .sort((a, b) => Number(b.ratio ?? 0) - Number(a.ratio ?? 0))[0];
-        return {
-          method: o.logisticName ?? "Unknown",
-          price_usd: Number.isFinite(totalUsd) ? Number(totalUsd.toFixed(2)) : null,
-          price_php: Number.isFinite(totalUsd) ? Math.ceil(totalUsd * rate) : null,
-          remote_fee_usd: remote || null,
-          delivery: o.aging ?? null,
-          delivery_likely: likely ? `${likely.minDays}-${likely.maxDays}` : null,
-          delivery_likely_ratio: likely?.ratio ? Number(likely.ratio) : null,
-          note: o.remark ?? null,
-        };
-      })
-      .filter((o) => o.price_php !== null)
-      .sort((a, b) => (a.price_php! - b.price_php!));
+    const threshold = await freeShippingThresholdPhp(supabase);
+    const subtotal = Number(body.subtotal_php) || 0;
+    const free = subtotal >= threshold;
 
     return json({
-      quotable: true,
-      deliverable: normalised.length > 0,
+      quotable: quote.quotable,
+      deliverable: quote.deliverable,
       currency: "PHP",
-      usd_php_rate: rate,
-      options: normalised,
+      free_shipping_threshold_php: threshold,
+      free_shipping_applies: free,
+      // What the customer will actually be charged for postage.
+      shipping_php: free ? 0 : (quote.chosen?.price_php ?? null),
+      chosen: quote.chosen,
+      options: quote.options.slice(0, 5),
     });
   } catch (err) {
     console.error("shipping-quote error:", err);

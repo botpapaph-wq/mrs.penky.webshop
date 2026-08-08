@@ -420,8 +420,12 @@
       <div class="rounded-2xl p-5" style="background:#FBF8F0; border:1px solid #EDE4CC;">
         <h2 class="text-sm font-bold navy uppercase tracking-wide mb-4">Order Summary</h2>
         <div id="orderSummary" class="space-y-2 text-sm mb-4"></div>
-        <div class="pt-4" style="border-top:1px solid #EDE4CC;">
-          <p class="font-bold navy text-lg">Total: <span id="totalAmount" class="gold">&#8369;0</span></p>
+        <div class="pt-3 space-y-1 text-sm" style="border-top:1px solid #EDE4CC;">
+          <div class="flex justify-between"><span class="text-gray-600">Subtotal</span><span id="subtotalAmount" class="navy">&#8369;0</span></div>
+          <div class="flex justify-between"><span class="text-gray-600">Shipping</span><span id="shippingAmount" class="navy">&mdash;</span></div>
+        </div>
+        <div class="pt-3 mt-3" style="border-top:1px solid #EDE4CC;">
+          <p class="font-bold navy text-lg flex justify-between"><span>Total</span><span id="totalAmount" class="gold">&#8369;0</span></p>
         </div>
       </div>
 
@@ -447,7 +451,7 @@
       // price is always re-looked-up server-side in create-checkout-session.ts
       // from penky_products, never trusted from this cart data.
       const total = cart.reduce((sum, item) => sum + item.price_php * item.quantity, 0);
-      document.getElementById('totalAmount').textContent = '₱' + total.toLocaleString();
+      // total is set by setTotals() once postage is known
 
       if (cart.length === 0) {
         summary.innerHTML = '<p class="text-gray-500">Your cart is empty</p>';
@@ -526,19 +530,41 @@
       btn.style.cursor = 'not-allowed';
     })();
 
-    // ---- Shipping estimate -------------------------------------------------
-    // Asks our shipping-quote Edge Function, which in turn asks CJ's freight
-    // calculation. Two things matter here: showing the real cost before
-    // payment, and finding out that a destination cannot be served BEFORE the
-    // customer pays -- previously that only surfaced when forwarding the paid
-    // order to the supplier.
+    // ---- Shipping ----------------------------------------------------------
+    // Postage is charged to the customer, visibly. Rates vary from PHP 97 to
+    // 546 by weight and by destination, so a flat markup on every product
+    // would overcharge light items, undercharge heavy ones, and punish
+    // multi-item carts three times over -- see docs/MARGIN_ANALYSIS.md.
+    // The same endpoint decides what create-checkout-session charges, so what
+    // is shown here is what is taken.
     const QUOTE_URL = 'https://jvujmlssgnqawqqaeqnb.supabase.co/functions/v1/shipping-quote';
 
     const shipBox = document.getElementById('shipEstimate');
     const shipBody = document.getElementById('shipEstimateBody');
     const countrySelect = document.querySelector('select[name="shipping_country_code"]');
     const submitBtn = document.querySelector('#checkoutForm button[type="submit"]');
+    const subtotalEl = document.getElementById('subtotalAmount');
+    const shippingEl = document.getElementById('shippingAmount');
+    const totalEl = document.getElementById('totalAmount');
     let quoteToken = 0;
+
+    const peso = (n) => '\u20B1' + Number(n).toLocaleString();
+    const subtotalPhp = () => cart.reduce((s, i) => s + i.price_php * i.quantity, 0);
+
+    function setTotals(shippingPhp) {
+      const sub = subtotalPhp();
+      subtotalEl.textContent = peso(sub);
+      if (shippingPhp === null) {
+        shippingEl.textContent = '\u2014';
+        totalEl.textContent = peso(sub);
+      } else if (shippingPhp === 0) {
+        shippingEl.innerHTML = '<span style="color:#1C7C4C;font-weight:600;">Free</span>';
+        totalEl.textContent = peso(sub);
+      } else {
+        shippingEl.textContent = peso(shippingPhp);
+        totalEl.textContent = peso(sub + shippingPhp);
+      }
+    }
 
     function showShip(html, blocking) {
       shipBox.style.display = 'block';
@@ -551,7 +577,8 @@
     async function refreshShippingQuote() {
       if (!cart.length || !countrySelect) return;
       const token = ++quoteToken;
-      showShip('<span class="text-gray-500">Checking delivery options\u2026</span>', false);
+      setTotals(null);
+      showShip('<span class="text-gray-500">Checking postage\u2026</span>', false);
 
       try {
         const res = await fetch(QUOTE_URL, {
@@ -559,20 +586,21 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             end_country_code: countrySelect.value,
+            subtotal_php: subtotalPhp(),
             items: cart.map(i => ({ product_id: i.product_id, quantity: i.quantity }))
           })
         });
-        if (token !== quoteToken) return;          // a newer request already ran
+        if (token !== quoteToken) return;
         const data = await res.json();
-
         if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
 
         if (data.quotable === false) {
-          // Items not yet linked to a supplier variant - do not block the sale.
-          showShip('Shipping for this order is confirmed by us after checkout.', false);
+          setTotals(null);
+          showShip('Postage for this order is confirmed by us after checkout.', false);
           return;
         }
-        if (!data.deliverable || !data.options.length) {
+        if (!data.deliverable) {
+          setTotals(null);
           showShip(
             '<strong class="navy">We cannot ship to this country at the moment.</strong><br/>' +
             'Please choose another destination, or <a href="./contact.html" class="underline navy">contact us</a> ' +
@@ -580,21 +608,30 @@
           return;
         }
 
-        const rows = data.options.slice(0, 4).map(o =>
-          '<div class="flex justify-between gap-4 py-1">' +
-            '<span>' + o.method + (o.delivery ? ' <span class="text-gray-400">(' + o.delivery + ')</span>' : '') + '</span>' +
-            '<span class="font-semibold navy whitespace-nowrap">&#8369;' + Number(o.price_php).toLocaleString() + '</span>' +
-          '</div>').join('');
+        setTotals(data.shipping_php ?? 0);
 
-        showShip(
-          rows +
-          '<p class="text-xs text-gray-500 mt-3">Estimated by our carrier network for your address. ' +
-          'The exact amount is confirmed on your order confirmation.</p>', false);
+        const c = data.chosen || {};
+        const when = c.delivery_likely || c.delivery;
+        if (data.free_shipping_applies) {
+          showShip('<strong class="navy">Shipping is on us.</strong> ' +
+            (when ? 'Estimated delivery ' + when + ' days.' : ''), false);
+        } else {
+          const missing = data.free_shipping_threshold_php - subtotalPhp();
+          showShip(
+            '<div class="flex justify-between gap-4"><span>' + (c.method || 'Standard') +
+              (when ? ' <span class="text-gray-400">(' + when + ' days)</span>' : '') + '</span>' +
+              '<span class="font-semibold navy">' + peso(data.shipping_php) + '</span></div>' +
+            (missing > 0
+              ? '<p class="text-xs mt-3 leading-relaxed" style="color:#8A6D1F;">Add <strong>' + peso(missing) +
+                '</strong> more and shipping is free. A second piece costs almost nothing to send.</p>'
+              : ''), false);
+        }
       } catch (err) {
         if (token !== quoteToken) return;
         console.error('Shipping quote failed:', err);
-        // Never block a sale because our quote service hiccuped.
-        showShip('Shipping is confirmed by us after checkout.', false);
+        setTotals(null);
+        // Never block a sale over our own outage.
+        showShip('Postage is confirmed by us after checkout.', false);
       }
     }
 

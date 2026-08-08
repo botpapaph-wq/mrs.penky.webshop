@@ -301,6 +301,9 @@ let currentFilter = 'all';
 // see docs/MARGIN_ANALYSIS.md. The floor is enforced again server-side in
 // create-checkout-session; this is only the friendly version of it.
 const MIN_ORDER_PHP = 500;
+// Mirrors penky_store_settings.free_shipping_threshold_php (800).
+// Postage is charged visibly at checkout; this is the carrot, not the stick.
+const FREE_SHIPPING_PHP = 800;
 
 async function loadProducts() {
   const grid = document.getElementById('productsGrid');
@@ -492,15 +495,27 @@ function updateCart() {
       note.style.display = 'block';
       note.style.color = '#8A6D1F';
       note.innerHTML = 'Add <strong>&#8369;' + missing.toLocaleString() + '</strong> more to reach our &#8369;'
-        + MIN_ORDER_PHP.toLocaleString() + ' minimum order. Adding a second piece costs almost nothing to ship.';
+        + MIN_ORDER_PHP.toLocaleString() + ' minimum order.';
       link.style.pointerEvents = 'none';
       link.style.opacity = '0.45';
       link.setAttribute('aria-disabled', 'true');
     } else {
-      note.style.display = 'none';
       link.style.pointerEvents = '';
       link.style.opacity = '';
       link.removeAttribute('aria-disabled');
+      const toFree = FREE_SHIPPING_PHP - total;
+      if (cart.length && toFree > 0) {
+        note.style.display = 'block';
+        note.style.color = '#8A6D1F';
+        note.innerHTML = 'Add <strong>&#8369;' + toFree.toLocaleString()
+          + '</strong> more and shipping is free.';
+      } else if (cart.length) {
+        note.style.display = 'block';
+        note.style.color = '#1C7C4C';
+        note.innerHTML = '<strong>Shipping is on us.</strong>';
+      } else {
+        note.style.display = 'none';
+      }
     }
   }
   const items = document.getElementById('cartItems');
