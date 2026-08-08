@@ -97,6 +97,12 @@ Binärdateien lassen sich nur per Explorer kopieren. Zwei Versuche gescheitert: 
 - Migration für die Nachrichtentabelle
 - `CONTACT_ENDPOINT` auf `https://<project-ref>.supabase.co/functions/v1/contact-message` setzen
 
+### 3.6 Preise decken den Versand nicht
+
+**33 von 81 Artikeln werden mit Verlust verkauft**, sobald der Versand mitgerechnet wird; 11 weitere liegen unter 20 % Marge. Vollstaendige Auswertung mit Zahlen, Mindestpreistabelle und Optionen: `docs/MARGIN_ANALYSIS.md`.
+
+Kurz: Versand kostet PHP 97 bis 546 pro Sendung, der Medianpreis bei Armbaendern liegt bei PHP 160. Unter PHP 250 traegt sich kein Einzelartikel. Entscheidung ueber Preise, Mindestbestellwert oder Auslistung steht aus.
+
 ### 3.4 Domain einrichten
 
 DNS von GoDaddy auf Cloudflare Pages, Custom Domain hinterlegen, `www`-Redirect, SSL prüfen.
