@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Checkout and post-payment pages hold no content worth indexing
+Disallow: /checkout.html
+Disallow: /success.html
+Disallow: /cancel.html
+
+Sitemap: https://www.mrspenky.shop/sitemap.xml
