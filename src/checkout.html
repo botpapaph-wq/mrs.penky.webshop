@@ -410,6 +410,12 @@
         </p>
       </div>
 
+      <!-- Shipping estimate (live quote from the supplier's carrier network) -->
+      <div id="shipEstimate" class="rounded-2xl p-5" style="background:#F7F9FC; border:1px solid #E5E9F2; display:none;">
+        <h2 class="text-sm font-bold navy uppercase tracking-wide mb-3">Shipping</h2>
+        <div id="shipEstimateBody" class="text-sm text-gray-700"></div>
+      </div>
+
       <!-- Order Summary -->
       <div class="rounded-2xl p-5" style="background:#FBF8F0; border:1px solid #EDE4CC;">
         <h2 class="text-sm font-bold navy uppercase tracking-wide mb-4">Order Summary</h2>
@@ -497,6 +503,84 @@
     });
 
     renderSummary();
+
+    // ---- Shipping estimate -------------------------------------------------
+    // Asks our shipping-quote Edge Function, which in turn asks CJ's freight
+    // calculation. Two things matter here: showing the real cost before
+    // payment, and finding out that a destination cannot be served BEFORE the
+    // customer pays -- previously that only surfaced when forwarding the paid
+    // order to the supplier.
+    const QUOTE_URL = 'https://jvujmlssgnqawqqaeqnb.supabase.co/functions/v1/shipping-quote';
+
+    const shipBox = document.getElementById('shipEstimate');
+    const shipBody = document.getElementById('shipEstimateBody');
+    const countrySelect = document.querySelector('select[name="shipping_country_code"]');
+    const submitBtn = document.querySelector('#checkoutForm button[type="submit"]');
+    let quoteToken = 0;
+
+    function showShip(html, blocking) {
+      shipBox.style.display = 'block';
+      shipBody.innerHTML = html;
+      submitBtn.disabled = !!blocking;
+      submitBtn.style.opacity = blocking ? '0.5' : '';
+      submitBtn.style.cursor = blocking ? 'not-allowed' : '';
+    }
+
+    async function refreshShippingQuote() {
+      if (!cart.length || !countrySelect) return;
+      const token = ++quoteToken;
+      showShip('<span class="text-gray-500">Checking delivery options\u2026</span>', false);
+
+      try {
+        const res = await fetch(QUOTE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            end_country_code: countrySelect.value,
+            items: cart.map(i => ({ product_id: i.product_id, quantity: i.quantity }))
+          })
+        });
+        if (token !== quoteToken) return;          // a newer request already ran
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+
+        if (data.quotable === false) {
+          // Items not yet linked to a supplier variant - do not block the sale.
+          showShip('Shipping for this order is confirmed by us after checkout.', false);
+          return;
+        }
+        if (!data.deliverable || !data.options.length) {
+          showShip(
+            '<strong class="navy">We cannot ship to this country at the moment.</strong><br/>' +
+            'Please choose another destination, or <a href="./contact.html" class="underline navy">contact us</a> ' +
+            'and we will look for a route.', true);
+          return;
+        }
+
+        const rows = data.options.slice(0, 4).map(o =>
+          '<div class="flex justify-between gap-4 py-1">' +
+            '<span>' + o.method + (o.delivery ? ' <span class="text-gray-400">(' + o.delivery + ')</span>' : '') + '</span>' +
+            '<span class="font-semibold navy whitespace-nowrap">&#8369;' + Number(o.price_php).toLocaleString() + '</span>' +
+          '</div>').join('');
+
+        showShip(
+          rows +
+          '<p class="text-xs text-gray-500 mt-3">Estimated by our carrier network for your address. ' +
+          'The exact amount is confirmed on your order confirmation.</p>', false);
+      } catch (err) {
+        if (token !== quoteToken) return;
+        console.error('Shipping quote failed:', err);
+        // Never block a sale because our quote service hiccuped.
+        showShip('Shipping is confirmed by us after checkout.', false);
+      }
+    }
+
+    if (countrySelect) {
+      countrySelect.addEventListener('change', refreshShippingQuote);
+      refreshShippingQuote();
+    }
+
   </script>
 <footer class="footer-navy text-white mt-16 py-10">
   <div class="max-w-4xl mx-auto px-6 text-center text-sm">
