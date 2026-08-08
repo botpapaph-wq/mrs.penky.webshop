@@ -15,23 +15,38 @@
 <meta name="twitter:card" content="summary_large_image" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: 'Georgia', 'Garamond', serif; background: #faf8f6; }
-    .gold { color: #D4AF37; }
+    /* Kept in sync with index.html and checkout.html. */
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      background: #ffffff;
+      margin: 0;
+      color: #1C2541;
+    }
     .navy { color: #1C2541; }
-    .gold-bg { background-color: #D4AF37; }
-    .navy-bg { background-color: #1C2541; }
+    .gold { color: #C9A961; }
+    .navy-bg { background: #1C2541; }
+    .gold-bg { background: #C9A961; }
+    .logo-img { height: 40px; width: auto; }
+    .pill-btn-primary { background: #C9A961; color: #1C2541; }
+    .pill-btn-primary:hover { background: #D9BC7C; }
+    .card { background: #fff; border: 1px solid #ECE7DA; border-radius: 16px; }
   </style>
 </head>
 <body>
   <!-- Header with Logo -->
-  <header class="navy-bg py-8 border-b-4" style="border-color: #D4AF37;">
-    <div class="max-w-2xl mx-auto px-4 flex justify-center">
-      <img src="./logo-header.png" alt="Mrs. Penky" style="max-height: 140px; width: auto; object-fit: contain;" />
+  <header class="sticky top-0 z-50 bg-white border-b border-gray-100">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="./index.html" class="flex items-center gap-2">
+        <img src="./logo-header.png" alt="Mrs. Penky" class="logo-img" />
+        <span class="text-lg font-bold navy">Mrs. <span class="gold">Penky</span></span>
+      </a>
+      <a href="./index.html" class="px-5 py-2.5 rounded-full-full text-sm font-semibold pill-btn-primary transition">Back to Shop</a>
     </div>
   </header>
 
   <div class="max-w-2xl mx-auto px-4 py-12 text-center">
-    <div class="bg-white p-12 rounded-lg shadow-md border-t-4" style="border-color: #D4AF37;">
+    <div class="card p-12">
       <div class="text-6xl mb-6">🙏</div>
       <h2 class="text-3xl font-bold navy mb-4">Payment Cancelled</h2>
       <p class="text-gray-600 mb-8 text-lg">
@@ -39,7 +54,7 @@
       </p>
 
       <!-- Cart Summary -->
-      <div style="background: #fffbf0; border-left: 4px solid #D4AF37;" class="p-6 rounded mb-8 text-left">
+      <div style="background: #fffbf0; border-left: 4px solid #C9A961;" class="p-6 rounded-full mb-8 text-left">
         <p class="text-sm navy font-semibold mb-4">Your Cart:</p>
         <div id="cartSummary" class="text-sm text-gray-700 space-y-2"></div>
         <p class="text-sm gold font-semibold mt-4">
@@ -48,7 +63,7 @@
       </div>
 
       <!-- Blessing -->
-      <div style="background: #e3f2fd; border-left: 4px solid #1e88e5;" class="p-6 rounded mb-8">
+      <div style="background: #e3f2fd; border-left: 4px solid #1e88e5;" class="p-6 rounded-full mb-8">
         <p class="text-gray-700 leading-relaxed">
           💫 <em>"Take your time. These blessings will be here when your heart is ready."</em>
         </p>
@@ -59,10 +74,10 @@
         <p class="text-sm text-gray-600 mb-4">
           What would you like to do?
         </p>
-        <a href="/checkout.html" class="inline-block px-8 py-3 navy-bg text-white rounded font-bold hover:bg-gray-900 transition mr-3">
+        <a href="/checkout.html" class="inline-block px-8 py-3 navy-bg text-white rounded-full font-bold hover:bg-gray-900 transition mr-3">
           Try Again
         </a>
-        <a href="/" class="inline-block px-8 py-3 border-2 gold border rounded navy font-bold hover:gold-bg hover:text-white transition">
+        <a href="/" class="inline-block px-8 py-3 border-2 gold border rounded-full navy font-bold hover:gold-bg hover:text-white transition">
           Continue Shopping
         </a>
       </div>
