@@ -50,12 +50,19 @@ interface QuoteRequest {
   zip?: string;
 }
 
+// Field names verified against a live response from CJ's own calculator
+// (CN -> PH, 200 g) on 2026-08-08. They are NOT the names the docs imply:
+// the price is "price" (USD), not "logisticPrice", and the delivery window
+// is "aging" ("5-7"), not "logisticAging". Guessing here returned an empty
+// list that looked exactly like "no delivery possible".
 interface CjFreightOption {
   logisticName?: string;
-  logisticPrice?: number | string;
-  logisticPriceCn?: number | string;
-  logisticAging?: string;
-  logisticRemarks?: string;
+  price?: number | string;        // USD
+  cnprice?: number | string;      // CNY
+  aging?: string;                 // e.g. "5-7" (days)
+  remoteFee?: number | string;    // surcharge for remote areas
+  remark?: string;
+  arrivalTimeRanges?: { minDays?: string; maxDays?: string; ratio?: string }[];
 }
 
 // CJ prices are quoted in USD. The shop charges PHP, so the quote is
@@ -143,13 +150,23 @@ Deno.serve(async (req: Request) => {
 
     const normalised = options
       .map((o) => {
-        const usd = Number(o.logisticPrice ?? o.logisticPriceCn ?? NaN);
+        const usd = Number(o.price ?? NaN);
+        const remote = Number(o.remoteFee ?? 0) || 0;
+        const totalUsd = Number.isFinite(usd) ? usd + remote : NaN;
+        // The most likely arrival window is the range CJ gives the highest
+        // ratio to, which is more honest than the headline "aging" span.
+        const likely = (o.arrivalTimeRanges ?? [])
+          .slice()
+          .sort((a, b) => Number(b.ratio ?? 0) - Number(a.ratio ?? 0))[0];
         return {
           method: o.logisticName ?? "Unknown",
-          price_usd: Number.isFinite(usd) ? Number(usd.toFixed(2)) : null,
-          price_php: Number.isFinite(usd) ? Math.ceil(usd * rate) : null,
-          delivery: o.logisticAging ?? null,
-          note: o.logisticRemarks ?? null,
+          price_usd: Number.isFinite(totalUsd) ? Number(totalUsd.toFixed(2)) : null,
+          price_php: Number.isFinite(totalUsd) ? Math.ceil(totalUsd * rate) : null,
+          remote_fee_usd: remote || null,
+          delivery: o.aging ?? null,
+          delivery_likely: likely ? `${likely.minDays}-${likely.maxDays}` : null,
+          delivery_likely_ratio: likely?.ratio ? Number(likely.ratio) : null,
+          note: o.remark ?? null,
         };
       })
       .filter((o) => o.price_php !== null)
