@@ -59,9 +59,13 @@ Drei Armbänder statt einem, und der nötige Preis fällt von ₱309 auf ₱179.
 **Empfehlung: moderat erhöhen und den Warenkorb vergrößern, statt die Preise zu verdreifachen.**
 
 1. **Untergrenze ₱199.** Alles darunter raus oder hoch. Ein Devotionalienshop mit ₱10-Artikeln wirkt nicht günstig, sondern billig — beim Taufgeschenk ist das der falsche Eindruck.
-2. **Mindestbestellwert ₱500** oder Gratisversand ab ₱800. Beides schiebt den Warenkorb genau dorthin, wo der Versand sich rechnet.
+2. **Mindestbestellwert ₱500.** Schiebt den Warenkorb dorthin, wo der Versand sich rechnet. Wirkt sofort.
+
+   *Korrektur vom 08.08.2026:* Hier stand ursprünglich „oder Gratisversand ab ₱800". Das war ein Fehler in diesem Dokument. Ein Gratisversand-Schwellenwert setzt voraus, dass der Versand überhaupt berechnet wird — derzeit zahlt der Kunde nur die Produktsumme. Ohne diese Vorentscheidung verspricht „gratis ab ₱800" einen Nachlass auf etwas, das nichts kostet, und legt nahe, dass darunter Versandkosten anfallen. Siehe Punkt 5.
 3. **Sets bündeln.** Drei Armbänder als „Familienset", Rosenkranz plus Kreuz als „Taufset". Bündel lösen das Versandproblem und verkaufen sich bei Geschenkanlässen besser als Einzelstücke.
 4. **Schwere Billigartikel auslisten.** Die 320-g-LED-Kerze für ₱80 und das 269-g-Armband für ₱90 werden auch mit Bündeln nicht rentabel.
+
+5. **Versand berechnen — Voraussetzung für 2 in der Gratisversand-Variante.** Solange der Versand nicht umgelegt wird, trägt ihn die Marge. Wird er umgelegt, ist ein Gratisversand ab einem Schwellenwert das stärkste Instrument, um den Warenkorb zu vergrößern: der Kunde legt lieber ein zweites Stück dazu, als ₱120 Versand zu zahlen. Die `shipping-quote`-Function liefert die echten Beträge bereits; es fehlt nur die Entscheidung.
 
 ---
 
