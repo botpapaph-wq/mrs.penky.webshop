@@ -187,19 +187,37 @@
     sendBtn.classList.add('loading');
 
     try {
+      // The Pages Function expects { message, history } and answers with
+      // { message }. The widget used to send { messages } and read data.reply,
+      // so every request was rejected as invalid and every answer discarded --
+      // which looked exactly like a broken AI binding.
       const res = await fetch(CHAT_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify({
+          message: text,
+          // Everything before this turn, minus the greeting we injected
+          // ourselves, capped to keep the prompt small.
+          history: messages.slice(0, -1).slice(-8),
+        }),
       });
 
-      const data = await res.json();
-      const reply = data.reply || 'I apologize, I could not process that request.';
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        // Surface what the server actually said instead of a generic line.
+        throw new Error(data.error || `Server returned ${res.status}`);
+      }
+
+      const reply = (data.message || '').trim();
+      if (!reply) throw new Error('Empty reply from server');
+
       messages.push({ role: 'assistant', content: reply });
       renderMessages();
     } catch (err) {
       console.error('Chat error:', err);
-      messages.push({ role: 'assistant', content: "Sorry, I can't reach our system right now. Please try again in a moment, or email us at mrs.penkys.webshop@gmail.com." });
+      const detail = (err && err.message) ? ` (${err.message})` : '';
+      messages.push({ role: 'assistant', content: "Sorry, I can't reach our system right now" + detail + ". Please try again in a moment, or email us at mrs.penkys.webshop@gmail.com." });
       renderMessages();
     }
 
@@ -252,7 +270,10 @@
     "English \u2014 kung asa ka komportable. How can I help you po?";
 
   // Load conversation history from localStorage
-  const saved = localStorage.getItem('chat-history');
+  const HISTORY_KEY = 'chat-history-v2';
+  // Key bumped: v1 entries carry the old greeting and the old request shape.
+  try { localStorage.removeItem('chat-history'); } catch (e) {}
+  const saved = localStorage.getItem(HISTORY_KEY);
   if (saved) {
     try { messages = JSON.parse(saved) || []; } catch (e) { messages = []; }
   }
@@ -263,6 +284,6 @@
 
   // Save conversation on every message
   setInterval(() => {
-    localStorage.setItem('chat-history', JSON.stringify(messages.slice(-10)));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-10)));
   }, 1000);
 })();
