@@ -300,7 +300,7 @@ let currentFilter = 'all';
 // after that, so a single cheap item can never carry its own postage --
 // see docs/MARGIN_ANALYSIS.md. The floor is enforced again server-side in
 // create-checkout-session; this is only the friendly version of it.
-const MIN_ORDER_PHP = 500;
+const MIN_ORDER_PHP = 500;   // penky_store_settings.min_order_php
 // Mirrors penky_store_settings.free_shipping_threshold_php (800).
 // Postage is charged visibly at checkout; this is the carrot, not the stick.
 const FREE_SHIPPING_PHP = 800;
