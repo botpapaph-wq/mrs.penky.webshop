@@ -97,11 +97,19 @@ Binärdateien lassen sich nur per Explorer kopieren. Zwei Versuche gescheitert: 
 - Migration für die Nachrichtentabelle
 - `CONTACT_ENDPOINT` auf `https://<project-ref>.supabase.co/functions/v1/contact-message` setzen
 
-### 3.6 Preise decken den Versand nicht
+### 3.7 Zwei Migrationen sind noch nicht ausgefuehrt
+
+`supabase/migrations/003_pricing_floor.sql` (Untergrenze PHP 199, Auslistung zweier Verlustartikel, Mindestbestellwert 500) und `004_shipping_charged.sql` (Versandspalten, Gratisversand ab PHP 800). Beide brauchen den Service-Role-Key und muessen im Supabase-SQL-Editor laufen. Beide enthalten Ruecknahme-Befehle am Dateiende.
+
+Danach: Edge Functions `shipping-quote` und `create-checkout-session` neu deployen.
+
+### 3.6 Preise decken den Versand nicht -- ENTSCHIEDEN
 
 **33 von 81 Artikeln werden mit Verlust verkauft**, sobald der Versand mitgerechnet wird; 11 weitere liegen unter 20 % Marge. Vollstaendige Auswertung mit Zahlen, Mindestpreistabelle und Optionen: `docs/MARGIN_ANALYSIS.md`.
 
-Kurz: Versand kostet PHP 97 bis 546 pro Sendung, der Medianpreis bei Armbaendern liegt bei PHP 160. Unter PHP 250 traegt sich kein Einzelartikel. Entscheidung ueber Preise, Mindestbestellwert oder Auslistung steht aus.
+Entschieden am 08.08.2026: Untergrenze PHP 199, Mindestbestellwert PHP 500, **Versand wird sichtbar berechnet**, gratis ab PHP 800. Nicht in die Preise eingerechnet, weil der Versand zwischen PHP 97 und 546 schwankt und ein pauschaler Aufschlag Mehrfachkaeufe bestrafen wuerde.
+
+Offen geblieben: Sets buendeln. `forward-order` schickt pro Position genau eine CJ-Variante, ein Set aus zwei verschiedenen Artikeln kaeme nur halb an. Machbar entweder ueber ein echtes Set-Produkt bei CJ oder als Rabattregel im Warenkorb.
 
 ### 3.4 Domain einrichten
 
