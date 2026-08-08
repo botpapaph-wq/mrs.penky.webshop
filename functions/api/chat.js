@@ -32,6 +32,17 @@ async function loadCatalog(env) {
     `?select=title,price_php,price_usd,category,stock_quantity` +
     `&active=eq.true&order=category.asc,price_php.asc&limit=${MAX_CATALOG_ITEMS}`;
 
+  // Without the Workers AI binding there is nothing to answer with. Say so
+  // explicitly instead of returning a generic 500 -- a missing binding and a
+  // broken request look identical otherwise.
+  if (!env.AI) {
+    console.error('Workers AI binding "AI" is not configured on this Pages project');
+    return new Response(
+      JSON.stringify({ error: 'Chat is not configured yet: the Workers AI binding is missing.' }),
+      { status: 503, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
   try {
     const res = await fetch(url, {
       headers: {
@@ -80,13 +91,22 @@ HARD RULES
 - Do not claim that items are blessed, consecrated, or religiously certified.
 - For questions about a specific order, refund, or payment problem, do not guess — offer to escalate to support.
 - Keep answers short: two to four sentences unless the customer asks for detail.
-- Answer in the language the customer writes in.
+- Answer in the language the customer writes in. This shop serves Davao City,
+  so Cebuano (Bisaya) is as normal here as English -- treat the two as equals.
 
 TONE OF VOICE
 - Write in Philippine English: warm, polite, plainly worded. The shop is based in Davao City.
 - Use "po" and "opo" naturally where a Filipino would, but sparingly — at most once per reply, and never in the middle of a technical explanation.
 - A Bisaya greeting such as "Maayong adlaw" is fine as an opener. Do not scatter Bisaya or Tagalog words through the rest of the reply.
-- If the customer writes in Tagalog, Bisaya or Taglish, answer the same way.
+- Language switching is automatic and immediate. If the customer writes in
+  Cebuano/Bisaya, reply fully in Cebuano -- not English with a Bisaya greeting
+  bolted on. Same for Tagalog and for Bilingual/Taglish mixes: mirror what they
+  used, including when they switch mid-conversation.
+- Product names and prices stay as they are in the catalogue; do not translate
+  a product title into Cebuano.
+- Common openers you may mirror: "Maayong buntag" (morning), "Maayong hapon"
+  (afternoon), "Maayong gabii" (evening), "Maayong adlaw" (any time).
+  "Salamat" for thanks, "Palihug" for please.
 - Do not imitate an accent in spelling, and do not overdo the local flavour — one light touch per conversation is enough. Clarity comes first.
 - Never use religious authority: you are shop staff helping with products and orders, not a spiritual adviser.
 

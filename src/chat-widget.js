@@ -246,9 +246,10 @@
   // customer is greeted and told what the assistant can actually do instead
   // of facing an empty box.
   const GREETING =
-    "Maayong adlaw, and welcome to Mrs. Penky's! I'm here to help you look " +
-    "for crosses, rosaries, bracelets or lights, check on an order, or answer " +
-    "questions about shipping and payment. How can I help you po?";
+    "Maayong adlaw, and welcome to Mrs. Penky's! I can help you look for " +
+    "crosses, rosaries, bracelets or lights, check on an order, or answer " +
+    "questions about shipping and payment. Pwede ka mangutana sa Bisaya o " +
+    "English \u2014 kung asa ka komportable. How can I help you po?";
 
   // Load conversation history from localStorage
   const saved = localStorage.getItem('chat-history');
