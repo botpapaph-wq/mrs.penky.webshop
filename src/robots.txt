@@ -1,3 +1,9 @@
+# Content signals — https://contentsignals.org
+# search    = yes : Suchmaschinen duerfen indexieren (Google, Bing)
+# ai-input  = yes : Inhalte duerfen in KI-Antworten zitiert werden (bringt Traffic)
+# ai-train  = no  : Inhalte duerfen NICHT zum Training von KI-Modellen verwendet werden
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+
 User-agent: *
 Allow: /
 
