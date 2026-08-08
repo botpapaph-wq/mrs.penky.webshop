@@ -437,6 +437,10 @@
 
     let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 
+    // Mirrors penky_store_settings.min_order_php. Checked here as well because
+    // checkout.html can be opened directly, bypassing the cart sidebar.
+    const MIN_ORDER_PHP = 500;
+
     function renderSummary() {
       const summary = document.getElementById('orderSummary');
       // Displayed for the customer's convenience only — the authoritative
@@ -503,6 +507,24 @@
     });
 
     renderSummary();
+
+    (function enforceMinimumOrder() {
+      const total = cart.reduce((s, i) => s + i.price_php * i.quantity, 0);
+      if (!cart.length || total >= MIN_ORDER_PHP) return;
+      const box = document.createElement('div');
+      box.className = 'rounded-2xl p-5 mb-6';
+      box.style.cssText = 'background:#FDF6E7;border:1px solid #E8D9A8;';
+      box.innerHTML = '<p class="text-sm navy"><strong>Almost there.</strong> Our minimum order is &#8369;'
+        + MIN_ORDER_PHP.toLocaleString() + ' and your cart is at &#8369;' + total.toLocaleString()
+        + '. <a href="./index.html#shop" class="underline navy">Add one more piece</a> '
+        + '&mdash; a second item costs almost nothing to ship.</p>';
+      const form = document.getElementById('checkoutForm');
+      form.parentNode.insertBefore(box, form);
+      const btn = form.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.style.opacity = '0.45';
+      btn.style.cursor = 'not-allowed';
+    })();
 
     // ---- Shipping estimate -------------------------------------------------
     // Asks our shipping-quote Edge Function, which in turn asks CJ's freight

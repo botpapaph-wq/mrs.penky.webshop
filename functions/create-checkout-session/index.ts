@@ -177,6 +177,27 @@ Deno.serve(async (req) => {
   });
 
   const totalPhp = items.reduce((sum, i) => sum + i.unit_price_php * i.quantity, 0);
+
+  // Minimum order value. The cart and the checkout page both check this, but
+  // neither is trustworthy: the request can be made directly. Shipping costs
+  // PHP 97 for the first 10 g and only about PHP 0.50 per gram after that, so
+  // a lone cheap item cannot carry its own postage -- see
+  // docs/MARGIN_ANALYSIS.md. Read from settings so it can be changed without
+  // a deployment; falls back to 500 if the row is missing.
+  const { data: minSetting } = await supabase
+    .from("penky_store_settings")
+    .select("value")
+    .eq("key", "min_order_php")
+    .maybeSingle();
+
+  const minOrderPhp = Number(minSetting?.value) || 500;
+  if (totalPhp < minOrderPhp) {
+    return json({
+      error: `Minimum order value is PHP ${minOrderPhp}. This cart totals PHP ${totalPhp}.`,
+      min_order_php: minOrderPhp,
+      cart_total_php: totalPhp,
+    }, 400);
+  }
   const allHaveUsd = items.every((i) => i.unit_price_usd !== null);
   const totalUsd = allHaveUsd ? items.reduce((sum, i) => sum + i.unit_price_usd! * i.quantity, 0) : null;
 

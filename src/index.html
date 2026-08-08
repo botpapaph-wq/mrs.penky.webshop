@@ -264,7 +264,8 @@
     <div class="border-t border-gray-100 pt-6">
       <p class="text-sm text-gray-500 mb-1">Subtotal</p>
       <p class="text-2xl font-bold navy mb-5">₱<span id="cartTotal">0</span></p>
-      <a href="checkout.html" class="block text-center w-full py-3.5 rounded-full font-semibold pill-btn-primary mb-2">Checkout</a>
+      <p id="minOrderNote" class="text-xs mb-3 leading-relaxed" style="display:none;"></p>
+      <a href="checkout.html" id="checkoutLink" class="block text-center w-full py-3.5 rounded-full font-semibold pill-btn-primary mb-2">Checkout</a>
       <button id="continueShopping" class="w-full py-3.5 rounded-full font-semibold border navy">Continue Shopping</button>
     </div>
   </div>
@@ -293,6 +294,13 @@ let products = [];
 // checkout.html and create-checkout-session.ts already expect.
 let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 let currentFilter = 'all';
+
+// Minimum order value. Mirrors penky_store_settings.min_order_php (500).
+// Shipping starts at PHP 97 for the first 10 g and only PHP 0.50 per gram
+// after that, so a single cheap item can never carry its own postage --
+// see docs/MARGIN_ANALYSIS.md. The floor is enforced again server-side in
+// create-checkout-session; this is only the friendly version of it.
+const MIN_ORDER_PHP = 500;
 
 async function loadProducts() {
   const grid = document.getElementById('productsGrid');
@@ -473,6 +481,28 @@ function updateCart() {
   const total = cart.reduce((s,i)=>s+i.price_php*i.quantity,0);
   document.getElementById('cartCount').textContent = '('+count+')';
   document.getElementById('cartTotal').textContent = total.toLocaleString();
+
+  // Minimum order value: guide rather than scold. Say how much is missing,
+  // not just that the cart is too small.
+  const note = document.getElementById('minOrderNote');
+  const link = document.getElementById('checkoutLink');
+  if (note && link) {
+    const missing = MIN_ORDER_PHP - total;
+    if (cart.length && missing > 0) {
+      note.style.display = 'block';
+      note.style.color = '#8A6D1F';
+      note.innerHTML = 'Add <strong>&#8369;' + missing.toLocaleString() + '</strong> more to reach our &#8369;'
+        + MIN_ORDER_PHP.toLocaleString() + ' minimum order. Adding a second piece costs almost nothing to ship.';
+      link.style.pointerEvents = 'none';
+      link.style.opacity = '0.45';
+      link.setAttribute('aria-disabled', 'true');
+    } else {
+      note.style.display = 'none';
+      link.style.pointerEvents = '';
+      link.style.opacity = '';
+      link.removeAttribute('aria-disabled');
+    }
+  }
   const items = document.getElementById('cartItems');
   if (cart.length === 0) {
     items.innerHTML = '<p class="text-gray-400 text-center text-sm py-8">Your cart is empty</p>';
