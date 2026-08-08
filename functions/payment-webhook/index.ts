@@ -1,14 +1,15 @@
 // index.ts (payment-webhook)
-// Supabase Edge Function: receives PayMongo / Stripe payment webhooks,
+// Supabase Edge Function: receives PayMongo / PayPal payment webhooks,
 // verifies the signature, marks the order paid, forwards it to CJ
 // Dropshipping for fulfillment, and creates a draft Zoho Books invoice.
 //
-// Deploy as the "payment-webhook" function. Point PayMongo's and Stripe's
+// Deploy as the "payment-webhook" function. Point PayMongo's and PayPal's
 // webhook settings at:
 //   https://<project-ref>.supabase.co/functions/v1/payment-webhook
 //
 // Required secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (both
-// auto-provided by Supabase), PAYMONGO_WEBHOOK_SECRET, STRIPE_WEBHOOK_SECRET,
+// auto-provided by Supabase), PAYMONGO_WEBHOOK_SECRET, PAYPAL_CLIENT_ID,
+// PAYPAL_CLIENT_SECRET, PAYPAL_WEBHOOK_ID, PAYPAL_ENV,
 // ZOHO_ACCESS_TOKEN, INTERNAL_FUNCTION_SECRET (shared with forward-order.ts).
 //
 // NOTE on Zoho: ZOHO_ACCESS_TOKEN is a short-lived Zoho OAuth access token
@@ -22,11 +23,12 @@
 // Deno / Supabase Edge Functions runtime.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { verifyPayPalWebhook, paypalRequest } from '../_shared/paypal.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const paymongoWebhookSecret = Deno.env.get('PAYMONGO_WEBHOOK_SECRET') || '';
-const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || '';
+
 const zohoAccessToken = Deno.env.get('ZOHO_ACCESS_TOKEN') || '';
 const internalFunctionSecret = Deno.env.get('INTERNAL_FUNCTION_SECRET') || '';
 const zohoOrgId = '932735549';
@@ -34,7 +36,7 @@ const zohoOrgId = '932735549';
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
-  const signature = req.headers.get('paymongo-signature') || req.headers.get('stripe-signature');
+  const signature = req.headers.get('paymongo-signature');
   const body = await req.text();
 
   try {
@@ -58,16 +60,40 @@ Deno.serve(async (req: Request) => {
       orderId = payload.data?.attributes?.data?.attributes?.reference_number
         || payload.data?.attributes?.reference_number
         || null;
-    } else if (req.headers.has('stripe-signature')) {
-      if (!(await verifyStripeSignature(body, signature!, stripeWebhookSecret))) {
-        return new Response(JSON.stringify({ error: 'Invalid Stripe signature' }), { status: 403 });
+    } else if (req.headers.has('paypal-transmission-id')) {
+      // PayPal has no shared HMAC secret: the signature is checked by calling
+      // PayPal back with the transmission headers.
+      if (!(await verifyPayPalWebhook(req.headers, body))) {
+        return new Response(JSON.stringify({ error: 'Invalid PayPal signature' }), { status: 403 });
       }
-      gateway = 'stripe';
+      gateway = 'paypal';
       eventId = payload.id || '';
-      eventType = payload.type || 'unknown';
+      eventType = payload.event_type || 'unknown';
 
-      // Extract order ID from metadata
-      orderId = payload.data?.object?.metadata?.order_id || null;
+      // custom_id was set to our order id when the order was created. It sits
+      // in a different place depending on the event.
+      orderId = payload.resource?.custom_id
+        || payload.resource?.purchase_units?.[0]?.custom_id
+        || null;
+
+      // intent=CAPTURE means the money is only authorised once the buyer
+      // approves; the capture itself is ours to trigger. Do that here, then
+      // wait for PAYMENT.CAPTURE.COMPLETED before marking the order paid, so
+      // there is exactly one place where an order becomes "paid".
+      if (eventType === 'CHECKOUT.ORDER.APPROVED' && payload.resource?.id) {
+        try {
+          await paypalRequest(`/v2/checkout/orders/${payload.resource.id}/capture`, {
+            method: 'POST',
+            headers: { 'PayPal-Request-Id': `capture-${payload.resource.id}` },
+            body: '{}',
+          });
+        } catch (captureErr) {
+          console.error('PayPal capture failed:', captureErr);
+          // 500 so PayPal retries the notification instead of dropping it.
+          return new Response(JSON.stringify({ error: 'Capture failed' }), { status: 500 });
+        }
+        return new Response(JSON.stringify({ status: 'captured' }), { status: 200 });
+      }
     } else {
       return new Response(JSON.stringify({ error: 'No valid signature' }), { status: 400 });
     }
@@ -107,7 +133,7 @@ Deno.serve(async (req: Request) => {
 
     // Process payment events
     if ((gateway === 'paymongo' && eventType === 'checkout_session.payment.paid') ||
-        (gateway === 'stripe' && eventType === 'charge.succeeded')) {
+        (gateway === 'paypal' && eventType === 'PAYMENT.CAPTURE.COMPLETED')) {
 
       if (!orderId) {
         console.warn('No order ID found in webhook');
@@ -214,14 +240,6 @@ async function verifyPayMongoSignature(body: string, signature: string, secret: 
   return (te !== '' && computedSig === te) || (li !== '' && computedSig === li);
 }
 
-async function verifyStripeSignature(body: string, signature: string, secret: string): Promise<boolean> {
-  const parts = signature.split(',');
-  const timestamp = parts.find((p) => p.startsWith('t='))?.slice(2) || '';
-  const sig = parts.find((p) => p.startsWith('v1='))?.slice(3) || '';
-
-  const computedSig = await hmacSha256Hex(`${timestamp}.${body}`, secret);
-  return sig === computedSig;
-}
 
 async function hmacSha256Hex(data: string, secret: string): Promise<string> {
   const enc = new TextEncoder();

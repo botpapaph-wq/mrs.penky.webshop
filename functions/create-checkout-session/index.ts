@@ -5,7 +5,7 @@
 // Re-prices every cart item server-side from penky_products (never trusts
 // client-submitted prices), creates the penky_orders + penky_order_items
 // rows (payment_status='pending', order_status='new' — both column
-// defaults), then creates a PayMongo or Stripe Checkout Session depending
+// defaults), then creates a PayMongo Checkout Session or a PayPal Order depending
 // on payment_method and returns { checkout_url } for the browser to
 // redirect to. This matches what checkout.html's existing JS already
 // expects from EDGE_FUNCTION_URL.
@@ -26,7 +26,8 @@
 //   v1 was chosen for simplicity, matching the synchronous
 //   "checkout_session.payment.paid" webhook flow already implemented.
 //
-// Stripe Checkout Sessions API is well-established, standard v1 REST
+// PayPal Orders API v2 is used instead of Stripe: Stripe does not accept
+// business accounts registered in the Philippines.
 // (form-encoded, Bearer auth) — not re-verified against docs this session,
 // flagged here for the record rather than treated as CJ-API-level risk.
 //
@@ -37,14 +38,16 @@
 // to call it with no shared secret.
 //
 // Required secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (both
-// auto-provided by Supabase), PAYMONGO_SECRET_KEY, STRIPE_SECRET_KEY.
+// auto-provided by Supabase), PAYMONGO_SECRET_KEY, PAYPAL_CLIENT_ID,
+// PAYPAL_CLIENT_SECRET, PAYPAL_ENV.
 //
 // Deno / Supabase Edge Functions runtime.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { paypalRequest, money } from "../_shared/paypal.ts";
 
 const PAYMONGO_SECRET_KEY = Deno.env.get("PAYMONGO_SECRET_KEY") ?? "";
-const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
+
 
 function supabaseAdmin() {
   return createClient(
@@ -87,7 +90,7 @@ interface CheckoutRequestBody {
   shipping_province?: string;
   shipping_country_code?: string;
   shipping_zip?: string;
-  payment_method: "paymongo" | "stripe";
+  payment_method: "paymongo" | "paypal";
   success_url: string;
   cancel_url: string;
 }
@@ -129,8 +132,8 @@ Deno.serve(async (req) => {
       400,
     );
   }
-  if (body.payment_method !== "paymongo" && body.payment_method !== "stripe") {
-    return json({ error: 'payment_method must be "paymongo" or "stripe"' }, 400);
+  if (body.payment_method !== "paymongo" && body.payment_method !== "paypal") {
+    return json({ error: 'payment_method must be "paymongo" or "paypal"' }, 400);
   }
   if (!body.success_url || !body.cancel_url) {
     return json({ error: "success_url and cancel_url are required" }, 400);
@@ -138,8 +141,8 @@ Deno.serve(async (req) => {
   if (body.payment_method === "paymongo" && !PAYMONGO_SECRET_KEY) {
     return json({ error: "PAYMONGO_SECRET_KEY secret is not set on this project" }, 500);
   }
-  if (body.payment_method === "stripe" && !STRIPE_SECRET_KEY) {
-    return json({ error: "STRIPE_SECRET_KEY secret is not set on this project" }, 500);
+  if (body.payment_method === "paypal" && !Deno.env.get("PAYPAL_CLIENT_ID")) {
+    return json({ error: "PAYPAL_CLIENT_ID secret is not set on this project" }, 500);
   }
 
   const supabase = supabaseAdmin();
@@ -222,7 +225,7 @@ Deno.serve(async (req) => {
     const checkoutUrl =
       body.payment_method === "paymongo"
         ? await createPayMongoCheckoutSession(order.id, body, items)
-        : await createStripeCheckoutSession(order.id, body, items);
+        : await createPayPalOrder(order.id, body, items);
 
     return json({ checkout_url: checkoutUrl, order_id: order.id });
   } catch (err) {
@@ -293,42 +296,65 @@ async function createPayMongoCheckoutSession(
   return checkoutUrl;
 }
 
-async function createStripeCheckoutSession(
+async function createPayPalOrder(
   orderId: string,
   body: CheckoutRequestBody,
   items: PricedItem[],
 ): Promise<string> {
-  const params = new URLSearchParams();
-  params.set("mode", "payment");
-  params.set("success_url", body.success_url);
-  params.set("cancel_url", body.cancel_url);
-  params.set("customer_email", body.customer_email);
-  params.set("metadata[order_id]", orderId);
+  // Line items are re-priced server-side before this point, so the totals
+  // here are authoritative -- never taken from the browser.
+  const itemTotal = items.reduce((sum, it) => sum + it.unit_price_php * it.quantity, 0);
 
-  items.forEach((item, idx) => {
-    params.set(`line_items[${idx}][quantity]`, String(item.quantity));
-    params.set(`line_items[${idx}][price_data][currency]`, "php");
-    params.set(`line_items[${idx}][price_data][unit_amount]`, String(Math.round(item.unit_price_php * 100)));
-    params.set(`line_items[${idx}][price_data][product_data][name]`, item.title);
-    if (item.image_url) {
-      params.set(`line_items[${idx}][price_data][product_data][images][0]`, item.image_url);
-    }
-  });
-
-  const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+  const order = await paypalRequest<{ id: string; links: { rel: string; href: string }[] }>(
+    "/v2/checkout/orders",
+    {
+      method: "POST",
+      headers: {
+        // Makes a retried request reuse the same PayPal order instead of
+        // creating a second one if our call times out mid-flight.
+        "PayPal-Request-Id": orderId,
+      },
+      body: JSON.stringify({
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            // custom_id carries our order id through every later webhook.
+            custom_id: orderId,
+            invoice_id: orderId,
+            description: "Mrs. Penky order",
+            amount: {
+              currency_code: "PHP",
+              value: money(itemTotal),
+              breakdown: {
+                item_total: { currency_code: "PHP", value: money(itemTotal) },
+              },
+            },
+            items: items.map((it) => ({
+              name: it.title.slice(0, 127),
+              quantity: String(it.quantity),
+              unit_amount: { currency_code: "PHP", value: money(it.unit_price_php) },
+            })),
+          },
+        ],
+        payment_source: {
+          paypal: {
+            experience_context: {
+              brand_name: "Mrs. Penky",
+              user_action: "PAY_NOW",
+              shipping_preference: "NO_SHIPPING",
+              return_url: body.success_url,
+              cancel_url: body.cancel_url,
+            },
+          },
+        },
+      }),
     },
-    body: params.toString(),
-  });
+  );
 
-  const responseJson = await res.json();
-  if (!res.ok) {
-    throw new Error(`Stripe checkout session creation failed: ${responseJson.error?.message ?? res.statusText}`);
-  }
-
-  if (!responseJson.url) throw new Error("Stripe response did not include a url");
-  return responseJson.url;
+  // v2 returns the approval link as "payer-action" when a payment_source is
+  // supplied, and as "approve" otherwise. Accept either.
+  const link = order.links?.find((l) => l.rel === "payer-action" || l.rel === "approve");
+  if (!link?.href) throw new Error("PayPal response did not include an approval link");
+  return link.href;
 }
+
