@@ -15,10 +15,12 @@
 <meta name="twitter:card" content="summary_large_image" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Kept in sync with index.html so checkout does not read as a different
-       site: same font stack, same gold (#C9A961, not #D4AF37), same pill
-       buttons and card radii. */
+    /* Same tokens as index.html, copied rather than imported so the two files
+       stay independent: identical font stack, identical gold (#C9A961, not
+       #D4AF37), identical navy, pill buttons, card radii and footer. If a
+       colour changes on the home page it has to change here too. */
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
       background: #ffffff;
@@ -33,10 +35,40 @@
     .logo-img { height: 40px; width: auto; }
     .pill-btn-primary { background: #C9A961; color: #1C2541; }
     .pill-btn-primary:hover { background: #D9BC7C; }
+    .hero-gradient {
+      background: linear-gradient(120deg, #1C2541 0%, #2A3459 45%, #3E4A78 100%);
+    }
+    .badge-pill {
+      background: rgba(201,169,97,0.15);
+      border: 1px solid rgba(201,169,97,0.4);
+    }
     .card {
       background: #fff;
       border: 1px solid #ECE7DA;
       border-radius: 16px;
+    }
+    /* Section heading inside a card — the eyebrow style from the home page,
+       reused so the checkout reads as the same document. */
+    .card-eyebrow {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #C9A961;
+      margin-bottom: 4px;
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1C2541;
+      letter-spacing: -0.3px;
+      margin: 0 0 20px;
+    }
+    /* The summary follows the customer down the address form on a wide screen.
+       Below 1024px the grid collapses and the sticky positioning is dropped,
+       otherwise it would fight the on-screen keyboard on a phone. */
+    @media (min-width: 1024px) {
+      .summary-sticky { position: sticky; top: 96px; }
     }
     .field {
       width: 100%;
@@ -79,56 +111,87 @@
   </style>
 </head>
 <body>
-  <!-- Header -->
+  <!-- Header — identical to index.html, with the cart button replaced by the
+       way back. Same height, same logo, same nav, so the bar does not jump
+       when the customer moves from the shop into the checkout. -->
   <header class="sticky top-0 z-50 bg-white border-b border-gray-100">
     <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
       <a href="./index.html" class="flex items-center gap-2">
         <img src="./logo-header.png" alt="Mrs. Penky" class="logo-img" />
         <span class="text-lg font-bold navy">Mrs. <span class="gold">Penky</span></span>
       </a>
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
+        <a href="./index.html#shop" class="hover:text-gray-900">Collections</a>
+        <a href="./about.html" class="hover:text-gray-900">Our Story</a>
+        <a href="./contact.html" class="hover:text-gray-900">Contact</a>
+      </nav>
       <a href="./index.html" class="px-5 py-2.5 rounded-full text-sm font-semibold pill-btn-primary transition">Back to Shop</a>
     </div>
   </header>
 
-  <div class="max-w-2xl mx-auto px-4 py-12">
-    <p class="text-xs tracking-[3px] gold uppercase font-semibold mb-3">Secure Checkout</p>
-    <h1 class="text-3xl font-bold navy mb-4" style="letter-spacing:-0.5px;">Complete your order</h1>
+  <!-- Navy band, the same gradient as the home page hero. Without it the
+       checkout opened on bare white and read like a different website. -->
+  <section class="hero-gradient">
+    <div class="max-w-6xl mx-auto px-6 py-14">
+      <div class="inline-flex items-center gap-2 badge-pill rounded-full px-4 py-1.5 mb-5">
+        <span class="w-1.5 h-1.5 rounded-full gold-bg"></span>
+        <span class="text-xs font-medium gold">Secure Checkout</span>
+      </div>
+      <h1 class="text-4xl lg:text-5xl font-bold text-white leading-[1.1] mb-4" style="letter-spacing:-1px;">
+        Complete your order.
+      </h1>
 
-    <!-- Three plain statements, no badges or seals we have not earned. They
-         answer the questions a first-time buyer actually has at this point:
-         who takes the card, what postage will cost, and what happens if the
-         parcel goes wrong. -->
-    <div class="flex flex-wrap gap-x-6 gap-y-2 mb-8 text-xs text-gray-600">
-      <span class="inline-flex items-center gap-1.5">
-        <span class="check-dot">&#10003;</span> Card details stay with PayMongo or PayPal
-      </span>
-      <span class="inline-flex items-center gap-1.5">
-        <span class="check-dot">&#10003;</span> Postage shown before you pay
-      </span>
-      <span class="inline-flex items-center gap-1.5">
-        <span class="check-dot">&#10003;</span> 7 days to report a problem
-      </span>
+      <!-- Three plain statements, no badges or seals we have not earned. They
+           answer what a first-time buyer actually wonders at this point: who
+           takes the card, what postage will cost, and what happens if the
+           parcel goes wrong. -->
+      <div class="flex flex-wrap gap-x-7 gap-y-2 text-sm text-white/70">
+        <span class="inline-flex items-center gap-2">
+          <span class="check-dot">&#10003;</span> Card details stay with PayMongo or PayPal
+        </span>
+        <span class="inline-flex items-center gap-2">
+          <span class="check-dot">&#10003;</span> Postage shown before you pay
+        </span>
+        <span class="inline-flex items-center gap-2">
+          <span class="check-dot">&#10003;</span> 7 days to report a problem
+        </span>
+      </div>
     </div>
-    <form id="checkoutForm" class="card p-8 space-y-6">
+  </section>
+
+  <div class="max-w-6xl mx-auto px-6 py-12">
+    <!-- The form wraps both columns so the submit button on the right still
+         belongs to the fields on the left. -->
+    <form id="checkoutForm" class="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-8 items-start">
+
+      <!-- ============ Left column: who and where ============ -->
+      <div class="space-y-8">
+
+      <div class="card p-8 space-y-6">
+      <div>
+        <p class="card-eyebrow">Step 1</p>
+        <h2 class="card-title">Where should it go?</h2>
+      </div>
 
       <div>
         <label class="field-label">Full Name</label>
-        <input type="text" name="customer_name" required class="field" />
+        <input type="text" name="customer_name" required class="field" autocomplete="name" />
       </div>
 
-      <div>
-        <label class="field-label">Email</label>
-        <input type="email" name="customer_email" required class="field" />
-      </div>
-
-      <div>
-        <label class="field-label">Phone</label>
-        <input type="tel" name="customer_phone" required class="field" />
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="field-label">Email</label>
+          <input type="email" name="customer_email" required class="field" autocomplete="email" />
+        </div>
+        <div>
+          <label class="field-label">Phone</label>
+          <input type="tel" name="customer_phone" required class="field" autocomplete="tel" />
+        </div>
       </div>
 
       <div>
         <label class="field-label">Street Address</label>
-        <textarea name="shipping_address" rows="2" required class="field" placeholder="House/unit no., street, barangay"></textarea>
+        <textarea name="shipping_address" rows="2" required class="field" autocomplete="street-address" placeholder="House/unit no., street, barangay"></textarea>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
@@ -412,49 +475,77 @@
            needed here; removed to avoid implying the customer can pay in
            USD when create-checkout-session.ts always charges PHP. -->
       <input type="hidden" name="currency" value="PHP" />
+      </div><!-- /card: address -->
 
-      <div>
-        <label class="field-label">Payment Method</label>
+      <div class="card p-8">
+        <div>
+          <p class="card-eyebrow">Step 2</p>
+          <h2 class="card-title">How would you like to pay?</h2>
+        </div>
         <div class="space-y-3">
           <label class="pay-option">
             <input type="radio" name="payment_method" value="paymongo" checked />
-            <span class="font-semibold navy">PayMongo (GCash, Maya, Cards)</span>
+            <span>
+              <span class="font-semibold navy block">PayMongo</span>
+              <span class="text-xs text-gray-500">GCash, Maya, QR Ph, credit and debit cards</span>
+            </span>
           </label>
           <label class="pay-option">
             <input type="radio" name="payment_method" value="paypal" />
-            <span class="font-semibold navy">PayPal (International)</span>
+            <span>
+              <span class="font-semibold navy block">PayPal</span>
+              <span class="text-xs text-gray-500">For paying from outside the Philippines</span>
+            </span>
           </label>
         </div>
-        <p id="checkout-legal" class="text-xs text-gray-600 mt-3 leading-relaxed">
-          By placing your order you agree to our
-          <a href="./terms.html" class="underline navy">Terms of Service</a>,
-          <a href="./privacy.html" class="underline navy">Privacy Policy</a> and
-          <a href="./refund.html" class="underline navy">Refund Policy</a>.
+        <p class="text-xs text-gray-500 mt-4 leading-relaxed">
+          You are taken to the provider's own page to pay. We never see or store your card number.
         </p>
       </div>
 
-      <!-- Shipping estimate (live quote from the supplier's carrier network) -->
-      <div id="shipEstimate" class="rounded-2xl p-5" style="background:#F7F9FC; border:1px solid #E5E9F2; display:none;">
-        <h2 class="text-sm font-bold navy uppercase tracking-wide mb-3">Shipping</h2>
-        <div id="shipEstimateBody" class="text-sm text-gray-700"></div>
-      </div>
+      </div><!-- /left column -->
 
-      <!-- Order Summary -->
-      <div class="rounded-2xl p-5" style="background:#FBF8F0; border:1px solid #EDE4CC;">
-        <h2 class="text-sm font-bold navy uppercase tracking-wide mb-4">Order Summary</h2>
-        <div id="orderSummary" class="space-y-2 text-sm mb-4"></div>
-        <div class="pt-3 space-y-1 text-sm" style="border-top:1px solid #EDE4CC;">
-          <div class="flex justify-between"><span class="text-gray-600">Subtotal</span><span id="subtotalAmount" class="navy">&#8369;0</span></div>
-          <div class="flex justify-between"><span class="text-gray-600">Shipping</span><span id="shippingAmount" class="navy">&mdash;</span></div>
-        </div>
-        <div class="pt-3 mt-3" style="border-top:1px solid #EDE4CC;">
-          <p class="font-bold navy text-lg flex justify-between"><span>Total</span><span id="totalAmount" class="gold">&#8369;0</span></p>
-        </div>
-      </div>
+      <!-- ============ Right column: what it costs ============ -->
+      <div class="summary-sticky space-y-4">
 
-      <button type="submit" class="w-full py-3.5 rounded-full font-semibold pill-btn-primary transition text-base">
-        Proceed to Payment
-      </button>
+        <!-- Shipping estimate (live quote from the supplier's carrier network) -->
+        <div id="shipEstimate" class="rounded-2xl p-6" style="background:#F7F9FC; border:1px solid #E5E9F2; display:none;">
+          <p class="card-eyebrow" style="color:#64748B;">Delivery</p>
+          <h2 class="text-base font-bold navy mb-3">Shipping</h2>
+          <div id="shipEstimateBody" class="text-sm text-gray-700"></div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="rounded-2xl p-6" style="background:#FBF8F0; border:1px solid #EDE4CC;">
+          <p class="card-eyebrow">Your order</p>
+          <h2 class="text-base font-bold navy mb-4">Order Summary</h2>
+          <div id="orderSummary" class="space-y-2 text-sm mb-4"></div>
+          <div class="pt-3 space-y-1.5 text-sm" style="border-top:1px solid #EDE4CC;">
+            <div class="flex justify-between"><span class="text-gray-600">Subtotal</span><span id="subtotalAmount" class="navy font-medium">&#8369;0</span></div>
+            <div class="flex justify-between"><span class="text-gray-600">Shipping</span><span id="shippingAmount" class="navy font-medium">&mdash;</span></div>
+          </div>
+          <div class="pt-3 mt-3" style="border-top:1px solid #EDE4CC;">
+            <p class="font-bold navy text-xl flex justify-between items-baseline"><span>Total</span><span id="totalAmount" class="gold">&#8369;0</span></p>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-4 rounded-full font-semibold pill-btn-primary transition text-base">
+          Proceed to Payment
+        </button>
+
+        <p id="checkout-legal" class="text-xs text-gray-500 leading-relaxed text-center px-2">
+          By placing your order you agree to our
+          <a href="./terms.html" class="underline">Terms of Service</a>,
+          <a href="./privacy.html" class="underline">Privacy Policy</a> and
+          <a href="./refund.html" class="underline">Refund Policy</a>.
+        </p>
+
+        <p class="text-xs text-gray-500 text-center">
+          Not ready yet? <a href="./index.html#shop" class="underline navy font-medium">Keep browsing</a> —
+          your cart stays where it is.
+        </p>
+
+      </div><!-- /right column -->
     </form>
   </div>
 
@@ -664,18 +755,55 @@
     }
 
   </script>
-<footer class="footer-navy text-white mt-16 py-10">
-  <div class="max-w-4xl mx-auto px-6 text-center text-sm">
-    <p class="mb-3">
-      <a href="./index.html" class="text-white/70 hover:text-white">Home</a> &middot;
-      <a href="./shipping.html" class="text-white/70 hover:text-white">Shipping</a> &middot;
-      <a href="./faq.html" class="text-white/70 hover:text-white">FAQ</a> &middot;
-      <a href="./contact.html" class="text-white/70 hover:text-white">Contact</a> &middot;
-      <a href="./terms.html" class="text-white/70 hover:text-white">Terms</a> &middot;
-      <a href="./privacy.html" class="text-white/70 hover:text-white">Privacy</a> &middot;
-      <a href="./refund.html" class="text-white/70 hover:text-white">Refund</a>
-    </p>
-    <p class="text-xs text-white/40">&copy; 2026 Mrs. Penky &middot; remoteSalesForce.asia, Davao City, Philippines</p>
+<!-- The four-column footer from the rest of the site. The single centred line
+     that used to be here was the clearest sign that checkout had been built
+     separately. -->
+<footer class="footer-navy text-white pt-16 pb-8">
+  <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+    <div class="col-span-2 md:col-span-1">
+      <div class="flex items-center gap-2 mb-3">
+        <img src="./logo-header.png" alt="Mrs. Penky" style="height: 32px; width: auto;" />
+        <p class="text-lg font-bold">Mrs. <span class="gold">Penky</span></p>
+      </div>
+      <p class="text-sm text-white/50 leading-relaxed">Devotional gifts and keepsakes. Shipping across the Philippines and Southeast Asia.</p>
+      <div class="flex items-center gap-4 mt-4">
+        <a href="https://www.instagram.com/mrs_penky/" target="_blank" rel="noopener noreferrer" aria-label="Mrs. Penky on Instagram" class="text-white/40 hover:text-white transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+        </a>
+        <a href="https://www.facebook.com/profile.php?id=61592692544140" target="_blank" rel="noopener noreferrer" aria-label="Mrs. Penky on Facebook" class="text-white/40 hover:text-white transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </a>
+      </div>
+    </div>
+    <div>
+      <p class="text-xs font-bold uppercase tracking-wide text-white/40 mb-3">Shop</p>
+      <div class="space-y-2 text-sm text-white/70">
+        <p><a href="./index.html?cat=crosses#shop" class="hover:text-white transition-colors">Crosses</a></p>
+        <p><a href="./index.html?cat=rosaries#shop" class="hover:text-white transition-colors">Rosaries</a></p>
+        <p><a href="./index.html?cat=bracelets#shop" class="hover:text-white transition-colors">Bracelets</a></p>
+        <p><a href="./index.html?cat=lights#shop" class="hover:text-white transition-colors">Lights</a></p>
+      </div>
+    </div>
+    <div>
+      <p class="text-xs font-bold uppercase tracking-wide text-white/40 mb-3">Info</p>
+      <div class="space-y-2 text-sm text-white/70">
+        <p><a href="./about.html" class="hover:text-white transition-colors">About Us</a></p>
+        <p><a href="./contact.html" class="hover:text-white transition-colors">Contact</a></p>
+        <p><a href="./shipping.html" class="hover:text-white transition-colors">Shipping</a></p>
+        <p><a href="./faq.html" class="hover:text-white transition-colors">FAQ</a></p>
+      </div>
+    </div>
+    <div>
+      <p class="text-xs font-bold uppercase tracking-wide text-white/40 mb-3">Legal</p>
+      <div class="space-y-2 text-sm">
+        <p><a href="./terms.html" class="text-white/70 hover:text-white">Terms of Service</a></p>
+        <p><a href="./privacy.html" class="text-white/70 hover:text-white">Privacy Policy</a></p>
+        <p><a href="./refund.html" class="text-white/70 hover:text-white">Refund Policy</a></p>
+      </div>
+    </div>
+  </div>
+  <div class="max-w-7xl mx-auto px-6 pt-6 border-t border-white/10 text-xs text-white/40">
+    &copy; 2026 Mrs. Penky &middot; Faith &amp; Blessings for Your Spiritual Journey
   </div>
 </footer>
 <!-- Support chat on the checkout page too: this is where a hesitant customer

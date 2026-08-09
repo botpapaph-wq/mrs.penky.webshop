@@ -216,8 +216,15 @@
       renderMessages();
     } catch (err) {
       console.error('Chat error:', err);
+      // Only shown when the request genuinely failed. Everything the bot can
+      // answer, it answers -- the email address belongs in the failure case,
+      // not in ordinary replies.
+      //
+      // Note for local testing: opening this file over file:// means there is
+      // no /api/chat to call, so this branch always fires with "Failed to
+      // fetch". That is the protocol, not a broken bot.
       const detail = (err && err.message) ? ` (${err.message})` : '';
-      messages.push({ role: 'assistant', content: "Sorry, I can't reach our system right now" + detail + ". Please try again in a moment, or email us at mrs.penkys.webshop@gmail.com." });
+      messages.push({ role: 'assistant', content: "Pasensya na — I can't reach our system right now" + detail + ". Please try again in a moment. If it keeps failing, write to mrs.penkys.webshop@gmail.com and we will answer there." });
       renderMessages();
     }
 
