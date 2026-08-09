@@ -1,29 +1,27 @@
 # Selbstdiagnose des Deployments
 
-Lauf: 2026-08-09 06:52 UTC  ·  Commit `b453863`
+Lauf: 2026-08-09 07:03 UTC  ·  Commit `f18349d`
 
-## Rechte dieses Workflow-Tokens
-```
-HTTP/2.0 200 OK
-X-Accepted-Github-Permissions: metadata=read
-```
+## Ergebnis Durchgang 1
 
-## Ist das Repo oeffentlich?
-```
-{"has_pages":false,"private":false,"visibility":"public"}
-```
+- Repo ist oeffentlich, `has_pages: false`
+- `POST /pages` -> 403 "Resource not accessible by integration"
+- GitHub Pages laesst sich per Workflow NICHT einschalten
+- Schreiben ins Repo funktioniert (diese Datei ist der Beweis)
 
-## Aktueller Pages-Status
-```
-{"message":"Not Found","documentation_url":"https://docs.github.com/rest/pages/pages#get-a-apiname-pages-site","status":"404"}gh: Not Found (HTTP 404)
-```
+## Durchgang 2: welche Secrets sind hinterlegt?
 
-## Versuch, Pages einzuschalten (build_type=workflow)
-```
-{"message":"Resource not accessible by integration","documentation_url":"https://docs.github.com/rest/pages/pages#create-a-apiname-pages-site","status":"403"}gh: Resource not accessible by integration (HTTP 403)
-```
+| Secret | gesetzt | Laenge |
+|---|---|---|
+| `CLOUDFLARE_API_TOKEN` | nein | - |
+| `CLOUDFLARE_ACCOUNT_ID` | nein | - |
+| `CF_API_TOKEN` | nein | - |
+| `CF_ACCOUNT_ID` | nein | - |
+| `CLOUDFLARE_TOKEN` | nein | - |
+| `SUPABASE_ACCESS_TOKEN` | nein | - |
+| `SUPABASE_SERVICE_ROLE_KEY` | nein | - |
+| `PAGES_DEPLOY_HOOK` | nein | - |
 
-## Pages-Status danach
-```
-{"message":"Not Found","documentation_url":"https://docs.github.com/rest/pages/pages#get-a-apiname-pages-site","status":"404"}gh: Not Found (HTTP 404)
-```
+Steht bei CLOUDFLARE_API_TOKEN (oder CF_API_TOKEN) ein JA, kann der
+naechste Lauf mit `wrangler pages deploy src` direkt auf mrspenky.shop
+veroeffentlichen -- ohne Dashboard, ohne Klick.
