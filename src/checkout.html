@@ -603,6 +603,12 @@
         cancel_url: `${window.location.origin}/checkout.html`,
       };
 
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalLabel = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'One moment…';
+      clearCheckoutError();
+
       try {
         const res = await fetch(EDGE_FUNCTION_URL, {
           method: 'POST',
@@ -614,15 +620,56 @@
 
         if (data.checkout_url) {
           window.location.href = data.checkout_url;
-        } else if (data.client_secret) {
-          window.location.href = `/payment.html?client_secret=${data.client_secret}`;
-        } else {
-          alert('Error: ' + (data.error || 'Checkout failed'));
+          return;
         }
+        if (data.client_secret) {
+          window.location.href = `/payment.html?client_secret=${data.client_secret}`;
+          return;
+        }
+        showCheckoutError(data.error, res.status);
       } catch (err) {
-        alert('Checkout error: ' + err.message);
+        showCheckoutError(err.message, 0);
       }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalLabel;
     });
+
+    // A customer must never read our internals. Anything that is our fault --
+    // a missing gateway secret, a 5xx, a dead network -- becomes one plain
+    // sentence plus a way to reach us; the technical text goes to the console
+    // for us. Only 4xx messages, which describe something the customer can
+    // actually correct, are shown as they are.
+    function checkoutErrorBox() {
+      let box = document.getElementById('checkoutError');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'checkoutError';
+        box.className = 'rounded-2xl p-5 mb-4 text-sm';
+        box.style.cssText = 'background:#FDECEC;border:1px solid #E9BFBF;color:#7A2B2B;';
+        const btn = document.querySelector('#checkoutForm button[type="submit"]');
+        btn.parentNode.insertBefore(box, btn);
+      }
+      return box;
+    }
+
+    function clearCheckoutError() {
+      const box = document.getElementById('checkoutError');
+      if (box) box.remove();
+    }
+
+    function showCheckoutError(detail, status) {
+      if (detail) console.error('Checkout failed:', status, detail);
+      const ourFault = !status || status >= 500 || /secret|not set|PAYPAL|PAYMONGO/i.test(detail || '');
+      checkoutErrorBox().innerHTML = ourFault
+        ? '<strong>We could not open the payment page.</strong><br/>'
+          + 'This one is on us, not on you — nothing has been charged. Please try again in a '
+          + 'few minutes, or send your order to '
+          + '<a href="mailto:mrs.penkys.webshop@gmail.com" class="underline">mrs.penkys.webshop@gmail.com</a> '
+          + 'and we will take it from there.'
+        : '<strong>' + String(detail || 'Please check your details and try again.') + '</strong>';
+      checkoutErrorBox().scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 
     renderSummary();
 
