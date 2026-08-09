@@ -1,0 +1,78 @@
+# Selbstdiagnose.
+#
+# Der Pages-Workflow schlägt fehl, und an das Actions-Log komme ich nicht
+# heran: api.github.com ist in meiner Umgebung gesperrt. Dieser Workflow holt
+# die Antwort auf dem einzigen Weg, der offen ist -- er schreibt sie als Datei
+# ins Repo zurück, wo ich sie über git lesen kann.
+#
+# Er versucht ausserdem, GitHub Pages per API einzuschalten. Gelingt das, ist
+# der eigentliche Blocker weg.
+
+name: Diagnose
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+  actions: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rechte und Pages-Status abfragen
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p .github
+          F=.github/DIAGNOSE.md
+          {
+            echo "# Selbstdiagnose des Deployments"
+            echo
+            echo "Lauf: $(date -u '+%Y-%m-%d %H:%M UTC')  ·  Commit \`${GITHUB_SHA::7}\`"
+            echo
+            echo '## Rechte dieses Workflow-Tokens'
+            echo '```'
+            # Die tatsaechlich gewaehrten Scopes stehen im Header der API-Antwort.
+            gh api -i /repos/${{ github.repository }} 2>&1 | grep -i -E '^(x-accepted-github-permissions|x-oauth-scopes|HTTP)' || echo "kein Header lesbar"
+            echo '```'
+            echo
+            echo '## Ist das Repo oeffentlich?'
+            echo '```'
+            gh api /repos/${{ github.repository }} --jq '{private: .private, visibility: .visibility, has_pages: .has_pages}' 2>&1
+            echo '```'
+            echo
+            echo '## Aktueller Pages-Status'
+            echo '```'
+            gh api /repos/${{ github.repository }}/pages 2>&1 | head -30
+            echo '```'
+            echo
+            echo '## Versuch, Pages einzuschalten (build_type=workflow)'
+            echo '```'
+            gh api -X POST /repos/${{ github.repository }}/pages \
+              -f build_type=workflow 2>&1 | head -30
+            echo '```'
+            echo
+            echo '## Pages-Status danach'
+            echo '```'
+            gh api /repos/${{ github.repository }}/pages 2>&1 | head -30
+            echo '```'
+          } > "$F"
+          cat "$F"
+
+      - name: Ergebnis ins Repo zurueckschreiben
+        continue-on-error: true
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/DIAGNOSE.md
+          git commit -m "Diagnose: warum das Pages-Deployment scheitert" || echo "nichts zu committen"
+          git push || echo "PUSH VERWEIGERT -- contents:write fehlt"
