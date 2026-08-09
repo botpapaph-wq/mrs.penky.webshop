@@ -1,0 +1,60 @@
+# Vorschau-Deployment über GitHub Pages.
+#
+# Warum: das Cloudflare-Pages-Projekt liefert seit dem 08.08. 04:25 einen alten
+# Stand aus und reagiert nicht auf Pushes. Solange das nicht geklärt ist, gibt
+# es hier wenigstens eine Adresse, unter der der aktuelle Stand sichtbar ist:
+#
+#     https://botpapaph-wq.github.io/mrs.penky.webshop/
+#
+# Das ist ausdrücklich nur eine Vorschau des Frontends. /api/chat ist eine
+# Cloudflare Pages Function und existiert hier nicht -- der Chat-Bot antwortet
+# auf dieser Adresse also nicht. Alles andere (Layout, Checkout, Cookie-Banner,
+# Produkte aus Supabase) funktioniert.
+#
+# Es werden KEINE Secrets gebraucht: GITHUB_TOKEN reicht, und
+# configure-pages aktiviert GitHub Pages beim ersten Lauf selbst.
+
+name: Preview auf GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Jekyll ignoriert Dateien mit führendem Unterstrich -- ohne .nojekyll
+      # würde _headers verschwinden. Auf GitHub Pages hat die Datei zwar keine
+      # Wirkung, aber sie soll trotzdem mitkommen.
+      - name: .nojekyll anlegen
+        run: touch src/.nojekyll
+
+      - name: Pages aktivieren
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: src/ hochladen
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: src
+
+      - name: Veröffentlichen
+        id: deployment
+        uses: actions/deploy-pages@v4
