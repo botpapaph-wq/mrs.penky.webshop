@@ -32,19 +32,28 @@ See `docs/SETUP.md` for detailed setup instructions.
 │   ├── success.html          # Payment confirmation
 │   ├── cancel.html           # Payment cancelled
 │   └── chat-widget.js        # AI chatbot widget
-├── functions/
-│   ├── api/chat.js           # Cloudflare Pages Function
-│   ├── create-checkout-session/  # Supabase Edge Function
-│   ├── payment-webhook/      # Webhook handler
-│   └── _shared/              # Shared utilities
+├── functions/                # Cloudflare Pages Functions ONLY
+│   └── api/chat.js           #   -> https://mrspenky.shop/api/chat
 ├── supabase/
+│   ├── functions/            # Supabase Edge Functions ONLY (Deno)
+│   │   ├── create-checkout-session/
+│   │   ├── payment-webhook/
+│   │   ├── shipping-quote/
+│   │   ├── forward-order/
+│   │   ├── sync-products/
+│   │   └── _shared/          # Shared utilities
 │   └── migrations/
 │       └── 001_init_schema.sql  # Database schema + RLS
-├── docs/
-│   ├── SETUP.md              # Deployment guide
-│   └── ZOHO.md               # Zoho Books setup
-└── wrangler.toml             # Cloudflare config
+└── docs/
+    ├── SETUP.md              # Deployment guide
+    └── ZOHO.md               # Zoho Books setup
 ```
+
+**Do not put Supabase functions in `/functions`.** Cloudflare Pages compiles
+everything in that directory as a Pages Function. Deno code (`Deno.serve`,
+`https://esm.sh/...` imports) cannot be compiled for workerd, the build fails,
+and Pages silently keeps serving the previous deployment — which is exactly
+what happened between 8 and 9 August 2026.
 
 ## Key Features
 

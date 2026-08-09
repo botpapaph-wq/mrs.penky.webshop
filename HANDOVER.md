@@ -33,20 +33,38 @@ src/     index.html, checkout.html, success.html, cancel.html,
          chat-widget.js,
          logo-header.png, logo-large.png, portrait-hero.png,
          Mrs. Penky Logo.png
-functions/
-  _shared/                    cj-client.ts, types.ts, zoho.ts
+         cookie-consent.js, psalms.js, robots.txt, sitemap.xml, _headers
+functions/                    NUR Cloudflare Pages Functions
   api/                        chat.js
-  payment-webhook/            index.ts
-  create-checkout-session/    index.ts
-  sync-products/              index.ts
-  forward-order/              index.ts
-docs/                         SETUP.md, PAYMENTS.md, ZOHO.md
-supabase/migrations/          001_init_schema.sql, 002_cj_dropshipping.sql
+supabase/
+  functions/                  NUR Supabase Edge Functions (Deno)
+    _shared/                  cj-client.ts, paypal.ts, shipping.ts, types.ts, zoho.ts
+    create-checkout-session/  index.ts
+    forward-order/            index.ts
+    payment-webhook/          index.ts
+    shipping-quote/           index.ts
+    sync-products/            index.ts
+  migrations/                 001 … 006
+docs/                         SETUP.md, PAYMENTS.md, ZOHO.md, MARGIN_ANALYSIS.md
 pics/                         LEER — siehe 3.1
-README.md, wrangler.toml, .env.example, .gitignore, HANDOVER.md
+README.md, .env.example, .gitignore, HANDOVER.md, AUDIT_2026-08-09.md
 BUILD_SUMMARY.md, DELIVERY_SUMMARY.md, FRONTEND_STATUS.md,
 TEST_LOCAL.md, VERIFICATION.md
 ```
+
+> **`functions/` im Wurzelverzeichnis gehört Cloudflare Pages — sonst nichts.**
+> Pages baut jede Datei darin als Pages Function. Die Supabase-Funktionen sind
+> Deno-Code (`Deno.serve`, `Deno.env`, `https://esm.sh/...`-Importe); workerd
+> kennt weder `Deno` noch Remote-Importe, der Build bricht ab, und Pages
+> liefert stillschweigend das letzte erfolgreiche Deployment weiter aus.
+> Genau das ist ab 08.08. passiert. Deshalb liegen sie jetzt unter
+> `supabase/functions/` — dem Pfad, den auch die Supabase-CLI erwartet.
+>
+> `wrangler.toml` ist gelöscht. Sie beschrieb einen Workers-Site
+> (`site = { bucket = "src" }`, `main = "src/index.js"` — Datei existiert
+> nicht, `[build] command = "npm run build"` — keine package.json) und wäre
+> von Pages ebenfalls als Fehler zurückgewiesen worden. Für ein Pages-Projekt
+> mit Konfiguration im Dashboard wird sie nicht gebraucht.
 
 `mrspenky-home.html` wurde von einer Parallelsitzung gelöscht (Duplikat von `index.html`).
 
