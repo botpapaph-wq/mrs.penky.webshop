@@ -36,35 +36,60 @@ export interface ShippingQuote {
   usd_php_rate: number | null;
 }
 
+// Two different shapes exist and both had to be handled the hard way:
+// the public REST API (verified 2026-08-08 against a live response) returns
+// logisticPrice / logisticAging, while the field names visible inside CJ's
+// own web calculator are price / aging. Reading only one of them yields an
+// empty list, which the checkout would show as "we cannot ship there".
 interface CjFreightOption {
   logisticName?: string;
-  price?: number | string;
+  logisticPrice?: number | string;   // USD, public API
+  price?: number | string;           // USD, web calculator
+  logisticAging?: string;            // e.g. "5-7"
   aging?: string;
-  remoteFee?: number | string;
+  remoteFee?: number | string | null;
   remark?: string;
   arrivalTimeRanges?: { minDays?: string; maxDays?: string; ratio?: string }[];
 }
 
-async function setting(supabase: any, key: string): Promise<string | null> {
-  const { data } = await supabase
+// penky_store_settings is a single wide row, not a key/value store -- the
+// columns are typed, so a missing setting is a schema problem rather than a
+// silently absent row.
+export interface StoreSettings {
+  usd_php_rate: number;
+  min_order_php: number;
+  free_shipping_threshold_php: number;
+}
+
+export async function loadSettings(supabase: any): Promise<StoreSettings> {
+  const { data, error } = await supabase
     .from("penky_store_settings")
-    .select("value")
-    .eq("key", key)
+    .select("usd_php_rate, min_order_php, free_shipping_threshold_php")
+    .limit(1)
     .maybeSingle();
-  return data?.value ?? null;
+
+  if (error) throw new Error(`penky_store_settings read failed: ${error.message}`);
+
+  const rate = Number(data?.usd_php_rate);
+  if (!Number.isFinite(rate) || rate <= 0) {
+    // Refuse rather than fall back to a guessed rate: a wrong rate quietly
+    // eats the margin on every single order.
+    throw new Error("usd_php_rate is not set in penky_store_settings");
+  }
+
+  return {
+    usd_php_rate: rate,
+    min_order_php: Number(data?.min_order_php) || 500,
+    free_shipping_threshold_php: Number(data?.free_shipping_threshold_php) || 800,
+  };
 }
 
 export async function usdToPhpRate(supabase: any): Promise<number> {
-  const rate = Number(await setting(supabase, "usd_php_rate"));
-  if (!Number.isFinite(rate) || rate <= 0) {
-    throw new Error("usd_php_rate is not set in penky_store_settings");
-  }
-  return rate;
+  return (await loadSettings(supabase)).usd_php_rate;
 }
 
 export async function freeShippingThresholdPhp(supabase: any): Promise<number> {
-  const v = Number(await setting(supabase, "free_shipping_threshold_php"));
-  return Number.isFinite(v) && v > 0 ? v : 800;
+  return (await loadSettings(supabase)).free_shipping_threshold_php;
 }
 
 /**
@@ -128,7 +153,7 @@ export async function quoteShipping(
 
   const options: ShippingOption[] = raw
     .map((o) => {
-      const usd = Number(o.price ?? NaN);
+      const usd = Number(o.logisticPrice ?? o.price ?? NaN);
       const remote = Number(o.remoteFee ?? 0) || 0;
       const total = Number.isFinite(usd) ? usd + remote : NaN;
       const likely = (o.arrivalTimeRanges ?? [])
@@ -138,7 +163,7 @@ export async function quoteShipping(
         method: o.logisticName ?? "Unknown",
         price_usd: Number(total.toFixed(2)),
         price_php: Math.ceil(total * rate),
-        delivery: o.aging ?? null,
+        delivery: o.logisticAging ?? o.aging ?? null,
         delivery_likely: likely ? `${likely.minDays}-${likely.maxDays}` : null,
         note: o.remark ?? null,
       };

@@ -45,7 +45,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { paypalRequest, money } from "../_shared/paypal.ts";
-import { quoteShipping, freeShippingThresholdPhp } from "../_shared/shipping.ts";
+import { quoteShipping, loadSettings } from "../_shared/shipping.ts";
 
 const PAYMONGO_SECRET_KEY = Deno.env.get("PAYMONGO_SECRET_KEY") ?? "";
 
@@ -185,13 +185,8 @@ Deno.serve(async (req) => {
   // a lone cheap item cannot carry its own postage -- see
   // docs/MARGIN_ANALYSIS.md. Read from settings so it can be changed without
   // a deployment; falls back to 500 if the row is missing.
-  const { data: minSetting } = await supabase
-    .from("penky_store_settings")
-    .select("value")
-    .eq("key", "min_order_php")
-    .maybeSingle();
-
-  const minOrderPhp = Number(minSetting?.value) || 500;
+  const settings = await loadSettings(supabase);
+  const minOrderPhp = settings.min_order_php;
   if (totalPhp < minOrderPhp) {
     return json({
       error: `Minimum order value is PHP ${minOrderPhp}. This cart totals PHP ${totalPhp}.`,
@@ -204,8 +199,7 @@ Deno.serve(async (req) => {
   // charged has to come from the same source as the parcel we actually book,
   // otherwise the difference lands in the margin. Uses the same helper the
   // checkout page called, so the customer is charged what they were shown.
-  const threshold = await freeShippingThresholdPhp(supabase);
-  const freeShipping = totalPhp >= threshold;
+  const freeShipping = totalPhp >= settings.free_shipping_threshold_php;
 
   const shippingQuote = await quoteShipping(
     supabase,

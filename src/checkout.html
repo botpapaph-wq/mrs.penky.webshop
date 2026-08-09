@@ -69,6 +69,13 @@
       transition: border-color .15s, background .15s;
     }
     .pay-option:hover { border-color: #C9A961; background: #FDFBF5; }
+    .pay-option:has(input:checked) { border-color: #C9A961; background: #FDFBF5; }
+    .check-dot {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #E7F3EC; color: #1C7C4C;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 10px; flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -85,7 +92,23 @@
 
   <div class="max-w-2xl mx-auto px-4 py-12">
     <p class="text-xs tracking-[3px] gold uppercase font-semibold mb-3">Secure Checkout</p>
-    <h1 class="text-3xl font-bold navy mb-8" style="letter-spacing:-0.5px;">Complete your order</h1>
+    <h1 class="text-3xl font-bold navy mb-4" style="letter-spacing:-0.5px;">Complete your order</h1>
+
+    <!-- Three plain statements, no badges or seals we have not earned. They
+         answer the questions a first-time buyer actually has at this point:
+         who takes the card, what postage will cost, and what happens if the
+         parcel goes wrong. -->
+    <div class="flex flex-wrap gap-x-6 gap-y-2 mb-8 text-xs text-gray-600">
+      <span class="inline-flex items-center gap-1.5">
+        <span class="check-dot">&#10003;</span> Card details stay with PayMongo or PayPal
+      </span>
+      <span class="inline-flex items-center gap-1.5">
+        <span class="check-dot">&#10003;</span> Postage shown before you pay
+      </span>
+      <span class="inline-flex items-center gap-1.5">
+        <span class="check-dot">&#10003;</span> 7 days to report a problem
+      </span>
+    </div>
     <form id="checkoutForm" class="card p-8 space-y-6">
 
       <div>
@@ -655,5 +678,10 @@
     <p class="text-xs text-white/40">&copy; 2026 Mrs. Penky &middot; remoteSalesForce.asia, Davao City, Philippines</p>
   </div>
 </footer>
+<!-- Support chat on the checkout page too: this is where a hesitant customer
+     asks about postage or payment, and losing them here is the expensive kind
+     of loss. The widget is self-contained and floats above the form. -->
+<script src="./chat-widget.js?v=20260809"></script>
+<script src="./cookie-consent.js?v=20260809"></script>
 </body>
 </html>

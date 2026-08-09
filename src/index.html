@@ -87,15 +87,9 @@
   }
 </style>
 
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-4EY5857B0X"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-4EY5857B0X');
-  </script>
+  <!-- Google Analytics is no longer loaded here. It is injected by
+       cookie-consent.js only after the visitor accepts; loading it in the
+       head fired a hit before anyone could object. -->
 </head>
 <body>
 
@@ -123,7 +117,7 @@
     <div>
       <div class="inline-flex items-center gap-2 badge-pill rounded-full px-4 py-1.5 mb-6">
         <span class="w-1.5 h-1.5 rounded-full gold-bg"></span>
-        <span class="text-xs font-medium gold">New: Fall Collection</span>
+        <span class="text-xs font-medium gold">Free shipping from &#8369;800</span>
       </div>
       <h1 class="text-5xl lg:text-6xl font-bold text-white leading-[1.08] mb-6" style="letter-spacing:-1px;">
         Faith, carried<br/>with grace —<br/>close to the heart.
@@ -181,7 +175,9 @@
     <div class="flex flex-col sm:flex-row justify-between sm:items-end gap-4 mb-10">
       <div>
         <p class="text-xs tracking-[3px] gold uppercase font-semibold mb-3">Devotional Collection</p>
-        <h2 class="text-3xl font-bold navy" style="letter-spacing:-0.5px;">Our Best Sellers</h2>
+        <!-- Not "Our Best Sellers": the grid shows the whole catalogue and
+             there are no sales figures behind the claim. -->
+        <h2 class="text-3xl font-bold navy" style="letter-spacing:-0.5px;">Our Collection</h2>
       </div>
       <div class="flex gap-2 overflow-x-auto">
         <button onclick="filterCategory('all')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap navy-bg text-white">All</button>
@@ -628,7 +624,8 @@ updateCart();
 })();
 </script>
 
-<script src="./psalms.js"></script>
-<script src="./chat-widget.js"></script>
+<script src="./psalms.js?v=20260809"></script>
+<script src="./chat-widget.js?v=20260809"></script>
+<script src="./cookie-consent.js?v=20260809"></script>
 </body>
 </html>

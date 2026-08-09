@@ -40,6 +40,51 @@ const CATEGORY_KEYWORDS: Record<string, string> = {
   lights: "religious candle",
 };
 
+// CJ's keyword search for "religious candle" returns a great deal of
+// candle-MAKING supply: silicone moulds, wicks, DIY kits. Those are craft
+// materials, not devotional objects, and once imported they sat in the shop
+// under "Lights" next to the cemetery lamps. A Halloween eyeball candle and a
+// Buddha mould came through the same way.
+//
+// Titles are matched, not categories, because CJ's own categorisation is not
+// reliable enough to filter on. Finished goods that happen to contain the word
+// "candle" are protected by ALLOW_PATTERNS, which wins over BLOCK_PATTERNS.
+//
+// Migration 006 deactivated the items that had already been imported; this
+// keeps the next sync from bringing them back.
+const BLOCK_PATTERNS: RegExp[] = [
+  /\b(mold|mould)\b/i,
+  /\bwick\b/i,
+  /\bhalloween\b/i,
+  /\bbuddha\b/i,
+  /\b(diy|do.it.yourself)\b/i,
+  /\bdrill\b/i,
+  /\bcandle (making|maker|material)\b/i,
+];
+
+const ALLOW_PATTERNS: RegExp[] = [
+  /\bcandle (holder|cup|tray|jar)\b/i,
+];
+
+/** True when a CJ title should not enter the catalogue at all. */
+function isOffRange(title: string): boolean {
+  if (!title) return true;
+  if (ALLOW_PATTERNS.some((re) => re.test(title))) return false;
+  return BLOCK_PATTERNS.some((re) => re.test(title));
+}
+
+/**
+ * CJ titles are machine translations and regularly assert "handmade", which
+ * contradicts the FAQ ("we do not manufacture our products"). Strip it on the
+ * way in rather than arguing about it later.
+ */
+function cleanTitle(title: string): string {
+  return title
+    .replace(/\b(handmade|hand.made|handcrafted|hand.crafted)\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 const MARKUP_MULTIPLIER = 3; // 3x CJ cost, per revised project decision (was 1.5x)
 const USD_TO_PHP_RATE = Number(Deno.env.get("CJ_USD_TO_PHP_RATE") ?? "58");
 const PAGE_SIZE = 20;
@@ -89,6 +134,8 @@ interface CjProductDetail {
 interface CategorySyncResult {
   synced: number;
   skipped: number;
+  /** Subset of `skipped`: rejected by isOffRange() rather than by missing data. */
+  blocked?: number;
   errors: string[];
 }
 
@@ -149,6 +196,15 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // Reject craft supply and off-theme items before they ever reach the
+      // shop. Checked here rather than after the upsert so a blocked product
+      // does not occupy an SKU row that a later sync would have to clean up.
+      if (isOffRange(detail.productNameEn)) {
+        summary.skipped++;
+        summary.blocked = (summary.blocked ?? 0) + 1;
+        continue;
+      }
+
       const variant = detail.variants?.[0];
       if (!variant) {
         summary.skipped++;
@@ -171,7 +227,7 @@ Deno.serve(async (req) => {
 
       const { error } = await supabase.from("penky_products").upsert(
         {
-          title: detail.productNameEn,
+          title: cleanTitle(detail.productNameEn),
           description: detail.description ?? null,
           price_php: pricePhp,
           price_usd: priceUsd,

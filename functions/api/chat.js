@@ -29,19 +29,8 @@ async function loadCatalog(env) {
 
   const url =
     `${env.SUPABASE_URL}/rest/v1/penky_products` +
-    `?select=title,price_php,price_usd,category,stock_quantity` +
+    `?select=title,price_php,category,stock_quantity` +
     `&active=eq.true&order=category.asc,price_php.asc&limit=${MAX_CATALOG_ITEMS}`;
-
-  // Without the Workers AI binding there is nothing to answer with. Say so
-  // explicitly instead of returning a generic 500 -- a missing binding and a
-  // broken request look identical otherwise.
-  if (!env.AI) {
-    console.error('Workers AI binding "AI" is not configured on this Pages project');
-    return new Response(
-      JSON.stringify({ error: 'Chat is not configured yet: the Workers AI binding is missing.' }),
-      { status: 503, headers: { 'Content-Type': 'application/json' } },
-    );
-  }
 
   try {
     const res = await fetch(url, {
@@ -65,9 +54,8 @@ async function loadCatalog(env) {
     return rows
       .map((r) => {
         const php = r.price_php != null ? `PHP ${Number(r.price_php).toFixed(0)}` : 'price on request';
-        const usd = r.price_usd != null ? ` / USD ${Number(r.price_usd).toFixed(2)}` : '';
         const stock = stockIsMaintained && Number(r.stock_quantity) === 0 ? ' [out of stock]' : '';
-        return `- ${r.title} (${r.category}) — ${php}${usd}${stock}`;
+        return `- ${r.title} (${r.category}) — ${php}${stock}`;
       })
       .join('\n');
   } catch {
@@ -81,9 +69,9 @@ function buildSystemPrompt(catalog) {
 ABOUT THE SHOP
 - Mrs. Penky sells devotional pieces and keepsakes: crosses and pendants, rosaries, bracelets, and candles and candle accessories (listed on the site under "Lights").
 - Products are sourced from suppliers and carefully selected — they are NOT handmade, handcrafted, or produced in-house. Never claim otherwise.
-- Prices are shown in Philippine Peso (PHP), with USD as a secondary currency.
-- Shipping covers the Philippines and Southeast Asia.
-- Payment is handled at checkout via PayMongo (local methods) and Stripe (international cards).
+- All prices are shown and charged in Philippine Peso (PHP). There is no second currency; never quote a USD amount.
+- Shipping covers the Philippines and Southeast Asia. It is calculated at checkout from the address and cart, and it is free from PHP 800. The minimum order value is PHP 500.
+- Payment is handled at checkout via PayMongo (GCash, Maya, QR Ph, cards) and PayPal (international). Stripe is not used.
 
 HARD RULES
 - Only name products, prices, and availability that appear in the product list below. If an item is not in the list, say you cannot find it and offer to check with the team.
@@ -120,6 +108,23 @@ export async function onRequest(context) {
 
   if (request.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
+  }
+
+  // Without the Workers AI binding there is nothing to answer with. Say so
+  // explicitly instead of returning a generic 500 -- a missing binding and a
+  // broken request look identical otherwise.
+  //
+  // This check used to sit inside loadCatalog(), where its `return new
+  // Response(...)` never reached the client: the Response object was handed
+  // back as if it were the catalogue string, got interpolated into the system
+  // prompt as "[object Response]", and the request then died one line later on
+  // env.AI.run of an undefined binding -- surfacing as a bare 500.
+  if (!env.AI) {
+    console.error('Workers AI binding "AI" is not configured on this Pages project');
+    return new Response(
+      JSON.stringify({ error: 'Chat is not configured yet: the Workers AI binding is missing.' }),
+      { status: 503, headers: { 'Content-Type': 'application/json' } },
+    );
   }
 
   try {
