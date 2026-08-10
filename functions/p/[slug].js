@@ -30,28 +30,43 @@ export async function onRequestGet({ params, env, request }) {
   const idPrefix = slug.slice(-8).toLowerCase();
   if (!/^[0-9a-f]{8}$/.test(idPrefix)) return notFound();
 
-  const url =
-    `${env.SUPABASE_URL}/rest/v1/penky_products` +
-    `?select=id,title,description,price_php,image_urls,category,stock_quantity,active` +
-    `&id=like.${idPrefix}*&limit=1`;
+  // Zwei Schritte, weil PostgREST kein LIKE auf eine uuid-Spalte zulässt --
+  // Postgres müsste dafür casten, und ein Cast ist im Filter nicht erlaubt.
+  // Erst die schmale Liste holen (id und Titel, wenige Kilobyte, 15 Minuten
+  // im Edge-Cache), darin das Präfix suchen, dann den vollen Datensatz über
+  // die exakte id. Die Alternative wäre die ganze UUID im Slug -- funktioniert
+  // auch, sieht aber in der Adresszeile und in Suchergebnissen schlecht aus.
+  const headers = {
+    apikey: env.SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
+  };
 
-  let rows;
+  let p;
   try {
-    const res = await fetch(url, {
-      headers: {
-        apikey: env.SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${env.SUPABASE_ANON_KEY}`,
-      },
-      cf: { cacheTtl: 300, cacheEverything: true },
-    });
-    if (!res.ok) throw new Error(`REST ${res.status}`);
-    rows = await res.json();
+    const listRes = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/penky_products?select=id&active=eq.true&limit=2000`,
+      { headers, cf: { cacheTtl: 900, cacheEverything: true } },
+    );
+    if (!listRes.ok) throw new Error(`REST list ${listRes.status}`);
+    const ids = await listRes.json();
+
+    const hit = ids.find((r) => String(r.id).toLowerCase().startsWith(idPrefix));
+    if (!hit) return notFound();
+
+    const oneRes = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/penky_products` +
+        `?select=id,title,description,price_php,image_urls,category,stock_quantity,active` +
+        `&id=eq.${encodeURIComponent(hit.id)}&limit=1`,
+      { headers, cf: { cacheTtl: 300, cacheEverything: true } },
+    );
+    if (!oneRes.ok) throw new Error(`REST one ${oneRes.status}`);
+    const rows = await oneRes.json();
+    p = rows && rows[0];
   } catch (err) {
     console.error('Product lookup failed:', err);
     return new Response('Temporarily unavailable.', { status: 503 });
   }
 
-  const p = rows && rows[0];
   if (!p || p.active !== true) return notFound();
 
   // Der kanonische Slug wird aus dem aktuellen Titel gebildet. Kam der Besucher
