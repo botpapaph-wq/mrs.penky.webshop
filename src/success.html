@@ -3,18 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Order Confirmed - Mrs. Penky</title>
+  <title>Order Received - Mrs. Penky</title>
 <meta name="description" content="Thank you for your order at Mrs. Penky." />
+<meta name="robots" content="noindex" />
 <link rel="canonical" href="https://www.mrspenky.shop/success.html" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Mrs. Penky" />
-<meta property="og:title" content="Order Confirmed - Mrs. Penky" />
+<meta property="og:title" content="Order Received - Mrs. Penky" />
 <meta property="og:description" content="Thank you for your order at Mrs. Penky." />
 <meta property="og:url" content="https://www.mrspenky.shop/success.html" />
 <meta property="og:image" content="https://www.mrspenky.shop/logo-large.png" />
 <meta name="twitter:card" content="summary_large_image" />
   <style>
-    /* Kept in sync with index.html and checkout.html. */
+    /* Same tokens as index.html and checkout.html. */
     * { box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
@@ -26,77 +27,212 @@
     .gold { color: #C9A961; }
     .navy-bg { background: #1C2541; }
     .gold-bg { background: #C9A961; }
+    .footer-navy { background: #10182E; }
     .logo-img { height: 40px; width: auto; }
     .pill-btn-primary { background: #C9A961; color: #1C2541; }
     .pill-btn-primary:hover { background: #D9BC7C; }
+    .hero-gradient {
+      background: linear-gradient(120deg, #1C2541 0%, #2A3459 45%, #3E4A78 100%);
+    }
+    .badge-pill {
+      background: rgba(201,169,97,0.15);
+      border: 1px solid rgba(201,169,97,0.4);
+    }
     .card { background: #fff; border: 1px solid #ECE7DA; border-radius: 16px; }
+    .card-eyebrow {
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      font-weight: 700; color: #C9A961; margin-bottom: 4px;
+    }
+    .card-title {
+      font-size: 18px; font-weight: 700; color: #1C2541;
+      letter-spacing: -0.3px; margin: 0 0 16px;
+    }
+    .step-dot {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #F3EEDF; color: #8A7333;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .verse {
+      background: #FBF8F0;
+      border-left: 3px solid #C9A961;
+      font-family: Georgia, Garamond, serif;
+      font-style: italic;
+    }
   </style>
-  <link rel="stylesheet" href="./tailwind.css?v=20260809" />
+  <link rel="stylesheet" href="./tailwind.css?v=20260810" />
 </head>
 <body>
-  <!-- Header with Logo -->
   <header class="sticky top-0 z-50 bg-white border-b border-gray-100">
     <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
       <a href="./index.html" class="flex items-center gap-2">
         <img src="./logo-header.png" alt="Mrs. Penky" class="logo-img" />
         <span class="text-lg font-bold navy">Mrs. <span class="gold">Penky</span></span>
       </a>
-      <a href="./index.html" class="px-5 py-2.5 rounded-full-full text-sm font-semibold pill-btn-primary transition">Back to Shop</a>
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
+        <a href="./index.html#shop" class="hover:text-gray-900">Collections</a>
+        <a href="./about.html" class="hover:text-gray-900">Our Story</a>
+        <a href="./contact.html" class="hover:text-gray-900">Contact</a>
+      </nav>
+      <a href="./index.html" class="px-5 py-2.5 rounded-full text-sm font-semibold pill-btn-primary transition">Back to Shop</a>
     </div>
   </header>
 
-  <div class="max-w-2xl mx-auto px-4 py-12 text-center">
-    <div class="card p-12">
-      <div class="text-6xl mb-6">✝️</div>
-      <h2 class="text-3xl font-bold navy mb-4">Order Confirmed</h2>
-      <p class="text-gray-600 mb-6 text-lg">
-        Thank you for your order! Your spiritual gifts are being prepared with care.
+  <!-- Same navy band as the checkout, so the last page of the purchase still
+       looks like the same shop. -->
+  <section class="hero-gradient">
+    <div class="max-w-3xl mx-auto px-6 py-14">
+      <div class="inline-flex items-center gap-2 badge-pill rounded-full px-4 py-1.5 mb-5">
+        <span class="w-1.5 h-1.5 rounded-full gold-bg"></span>
+        <span class="text-xs font-medium gold">Order received</span>
+      </div>
+      <h1 class="text-4xl lg:text-5xl font-bold text-white leading-[1.1] mb-4" style="letter-spacing:-1px;">
+        Thank you.
+      </h1>
+      <p class="text-white/70 text-base max-w-xl">
+        Your order is with us. We confirm it by email once the payment has
+        cleared, and again when the parcel is on its way.
       </p>
+    </div>
+  </section>
 
-      <!-- Order Details -->
-      <div style="background: #fffbf0; border-left: 4px solid #C9A961;" class="p-6 rounded-full mb-8 text-left">
-        <p class="text-sm navy font-semibold mb-2">Order Reference:</p>
-        <p class="font-mono text-gray-800 mb-6" id="orderRef">Loading...</p>
+  <div class="max-w-3xl mx-auto px-6 py-12 space-y-6">
 
-        <p class="text-sm navy font-semibold mb-2">What Happens Next:</p>
-        <ul class="text-sm text-gray-700 space-y-2 ml-4">
-          <li>✓ Order confirmation email sent</li>
-          <li>✓ Payment processed securely</li>
-          <li>✓ Invoice generated automatically</li>
-          <li>✓ Shipment tracking info sent within 24 hours</li>
-        </ul>
-      </div>
+    <!-- The reference is the order id our own server generated before sending
+         the customer to the payment provider. It is only shown when we actually
+         have it; an invented number would be worse than none, because support
+         could not look it up. -->
+    <div class="card p-8" id="refCard" hidden>
+      <p class="card-eyebrow">For your records</p>
+      <h2 class="card-title">Order reference</h2>
+      <p class="font-mono text-sm navy break-all" id="orderRef"></p>
+    </div>
 
-      <!-- Blessing -->
-      <div style="background: #e3f2fd; border-left: 4px solid #1e88e5;" class="p-6 rounded-full mb-8">
-        <p class="text-gray-700 leading-relaxed">
-          🙏 <em>"May these blessings bring peace, joy, and grace into your life. We are honored to share these spiritual gifts with you."</em>
-        </p>
-      </div>
+    <div class="card p-8">
+      <p class="card-eyebrow">What happens now</p>
+      <h2 class="card-title">Three steps, and none of them need you</h2>
 
-      <!-- CTA -->
-      <div>
-        <p class="text-sm text-gray-600 mb-4">
-          Need support? Our spiritual advisors are here to help.
-        </p>
-        <a href="./index.html" class="inline-block px-8 py-3 navy-bg text-white rounded-full font-bold hover:bg-gray-900 transition">
-          Continue Shopping
+      <!-- Deliberately written as what WILL happen, not as what has already
+           happened. This page is reached by a redirect from the payment
+           provider; the redirect says nothing about whether the money moved.
+           Claiming "payment processed" here would be a guess, and a wrong one
+           whenever a payment fails at the last moment. -->
+      <ol class="space-y-4 text-sm text-gray-700">
+        <li class="flex gap-3">
+          <span class="step-dot">1</span>
+          <span><strong class="navy">We confirm the payment.</strong>
+            As soon as the provider reports it as settled, you get an email
+            with the details. Usually within a few minutes.</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="step-dot">2</span>
+          <span><strong class="navy">We prepare the parcel.</strong>
+            Your pieces are packed and handed to the carrier.</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="step-dot">3</span>
+          <span><strong class="navy">You get a tracking number.</strong>
+            Sent by email, normally within 24 hours of dispatch.</span>
+        </li>
+      </ol>
+    </div>
+
+    <div class="verse rounded-2xl p-6 text-gray-700 leading-relaxed">
+      May these blessings bring peace, joy, and grace into your life. We are
+      honoured to share them with you.
+    </div>
+
+    <div class="card p-8">
+      <p class="card-eyebrow">If something looks wrong</p>
+      <h2 class="card-title">Write to us</h2>
+      <p class="text-sm text-gray-700 mb-5">
+        No confirmation email after an hour, wrong address, wrong item — tell us
+        and we will sort it out. Quote the reference above if you have it.
+      </p>
+      <div class="flex flex-wrap gap-3">
+        <a href="mailto:mrs.penkys.webshop@gmail.com"
+           class="px-6 py-3 rounded-full text-sm font-semibold pill-btn-primary transition">
+          mrs.penkys.webshop@gmail.com
+        </a>
+        <a href="./index.html#shop"
+           class="px-6 py-3 rounded-full text-sm font-semibold navy border border-gray-300 hover:border-gray-500 transition">
+          Continue shopping
         </a>
       </div>
     </div>
-
-    <!-- Footer Note -->
-    <p class="text-gray-500 text-xs mt-12">
-      A confirmation email has been sent to your email address with full order details.
-    </p>
   </div>
 
+  <footer class="footer-navy text-white pt-16 pb-8">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+        <div class="col-span-2 md:col-span-1">
+          <div class="flex items-center gap-2 mb-4">
+            <img src="./logo-header.png" alt="Mrs. Penky" class="logo-img" />
+            <span class="text-lg font-bold">Mrs. <span class="gold">Penky</span></span>
+          </div>
+          <p class="text-sm text-white/60 leading-relaxed">
+            Devotional gifts and keepsakes. Shipping across the Philippines and
+            Southeast Asia.
+          </p>
+        </div>
+        <div>
+          <p class="text-xs tracking-[2px] uppercase gold font-semibold mb-4">Shop</p>
+          <ul class="space-y-2 text-sm text-white/70">
+            <li><a href="./index.html#shop" class="hover:text-white">Crosses</a></li>
+            <li><a href="./index.html#shop" class="hover:text-white">Rosaries</a></li>
+            <li><a href="./index.html#shop" class="hover:text-white">Bracelets</a></li>
+            <li><a href="./index.html#shop" class="hover:text-white">Lights</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="text-xs tracking-[2px] uppercase gold font-semibold mb-4">Info</p>
+          <ul class="space-y-2 text-sm text-white/70">
+            <li><a href="./about.html" class="hover:text-white">About Us</a></li>
+            <li><a href="./contact.html" class="hover:text-white">Contact</a></li>
+            <li><a href="./shipping.html" class="hover:text-white">Shipping</a></li>
+            <li><a href="./faq.html" class="hover:text-white">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="text-xs tracking-[2px] uppercase gold font-semibold mb-4">Legal</p>
+          <ul class="space-y-2 text-sm text-white/70">
+            <li><a href="./terms.html" class="hover:text-white">Terms of Service</a></li>
+            <li><a href="./privacy.html" class="hover:text-white">Privacy Policy</a></li>
+            <li><a href="./refund.html" class="hover:text-white">Refund Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-white/10 pt-8 text-center text-xs text-white/50">
+        © 2026 Mrs. Penky · Davao City, Philippines
+      </div>
+    </div>
+  </footer>
+
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const orderId = params.get('order_id') || 'MRS-PENKY-' + Date.now();
-    document.getElementById('orderRef').textContent = orderId;
-    localStorage.setItem('cart', JSON.stringify([]));
+    // The checkout stores the order id our server returned, just before it
+    // hands the customer over to the payment provider. The provider comes back
+    // with its own token, which means nothing to us and nothing to support --
+    // so we show ours, and only if we really have it.
+    (function () {
+      var ref = null;
+      try { ref = localStorage.getItem('lastOrderId'); } catch (e) {}
+      if (!ref) {
+        var p = new URLSearchParams(window.location.search);
+        ref = p.get('order_id') || p.get('order');
+      }
+      if (ref) {
+        document.getElementById('orderRef').textContent = ref;
+        document.getElementById('refCard').hidden = false;
+      }
+      // The cart has served its purpose either way: the order row exists on the
+      // server, so leaving items in the basket would only invite a double order.
+      try {
+        localStorage.setItem('cart', '[]');
+        localStorage.removeItem('lastOrderId');
+      } catch (e) {}
+    })();
   </script>
 <script src="./cookie-consent.js?v=20260810"></script>
+<script src="./mobile-nav.js?v=20260810"></script>
 </body>
 </html>

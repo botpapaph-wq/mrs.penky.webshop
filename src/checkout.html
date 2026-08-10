@@ -101,6 +101,12 @@
     }
     .pay-option:hover { border-color: #C9A961; background: #FDFBF5; }
     .pay-option:has(input:checked) { border-color: #C9A961; background: #FDFBF5; }
+    /* Dialling code and number sit side by side, the code only as wide as it
+       needs to be. On a narrow phone the pair stays on one line -- stacking
+       them would read as two unrelated fields. */
+    .phone-row { display: flex; gap: 8px; }
+    .phone-code { flex: 0 0 auto; width: auto; padding-right: 8px; }
+    .phone-number { flex: 1 1 auto; min-width: 0; }
     .check-dot {
       width: 16px; height: 16px; border-radius: 50%;
       background: #E7F3EC; color: #1C7C4C;
@@ -108,7 +114,7 @@
       font-size: 10px; flex-shrink: 0;
     }
   </style>
-  <link rel="stylesheet" href="./tailwind.css?v=20260809" />
+  <link rel="stylesheet" href="./tailwind.css?v=20260810" />
 </head>
 <body>
   <!-- Header — identical to index.html, with the cart button replaced by the
@@ -185,7 +191,33 @@
         </div>
         <div>
           <label class="field-label">Phone</label>
-          <input type="tel" name="customer_phone" required class="field" autocomplete="tel" />
+          <!-- Split into dialling code and number. Typing "+63" by hand is the
+               single most common way a Philippine number arrives unusable, and
+               CJ rejects a shipment whose phone the carrier cannot call. The
+               two fields are joined into customer_phone on submit. -->
+          <div class="phone-row">
+            <select id="phoneCode" class="field phone-code" aria-label="Country code">
+              <option value="+63" selected>🇵🇭 +63</option>
+              <option value="+65">🇸🇬 +65</option>
+              <option value="+60">🇲🇾 +60</option>
+              <option value="+62">🇮🇩 +62</option>
+              <option value="+66">🇹🇭 +66</option>
+              <option value="+84">🇻🇳 +84</option>
+              <option value="+852">🇭🇰 +852</option>
+              <option value="+81">🇯🇵 +81</option>
+              <option value="+82">🇰🇷 +82</option>
+              <option value="+61">🇦🇺 +61</option>
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+49">🇩🇪 +49</option>
+              <option value="+41">🇨🇭 +41</option>
+              <option value="+43">🇦🇹 +43</option>
+              <option value="+971">🇦🇪 +971</option>
+            </select>
+            <input type="tel" id="phoneNumber" required class="field phone-number"
+                   inputmode="tel" autocomplete="tel-national" placeholder="912 345 6789" />
+          </div>
+          <input type="hidden" name="customer_phone" id="customerPhone" />
         </div>
       </div>
 
@@ -587,6 +619,16 @@
         return;
       }
 
+      // Join dialling code and number into one E.164 string. Leading zeros are
+      // dropped: a Filipino writes 0912…, but +630912… does not dial.
+      (function composePhone() {
+        const code = document.getElementById('phoneCode').value;
+        const rest = document.getElementById('phoneNumber').value
+          .replace(/[^\d]/g, '')
+          .replace(/^0+/, '');
+        document.getElementById('customerPhone').value = rest ? code + rest : '';
+      })();
+
       const formData = new FormData(e.target);
       const payload = {
         items: cart.map((item) => ({ product_id: item.product_id, quantity: item.quantity })),
@@ -617,6 +659,13 @@
         });
 
         const data = await res.json();
+
+        // Keep our own order id before handing over. The provider returns with
+        // its token, which is meaningless to the customer and to support; the
+        // confirmation page shows this instead.
+        if (data.order_id) {
+          try { localStorage.setItem('lastOrderId', data.order_id); } catch (e) {}
+        }
 
         if (data.checkout_url) {
           window.location.href = data.checkout_url;
@@ -858,5 +907,6 @@
      of loss. The widget is self-contained and floats above the form. -->
 <script src="./chat-widget.js?v=20260810"></script>
 <script src="./cookie-consent.js?v=20260810"></script>
+<script src="./mobile-nav.js?v=20260810"></script>
 </body>
 </html>
