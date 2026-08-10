@@ -324,6 +324,22 @@ async function loadProducts() {
   renderProducts();
 }
 
+// Must produce byte-for-byte the same slug as functions/p/[slug].js and
+// functions/sitemap-products.xml.js. A mismatch is not fatal -- the product
+// page answers with a 301 to the canonical address -- but it costs a redirect
+// on every click and slows down indexing.
+function productHref(p) {
+  const base = String(p.title || 'item')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+    .replace(/-+$/, '');
+  return `/p/${base || 'item'}-${String(p.id).slice(0, 8)}`;
+}
+
 function renderProducts() {
   const grid = document.getElementById('productsGrid');
   const filtered = currentFilter === 'all' ? products : products.filter(p => p.category === currentFilter);
@@ -337,12 +353,19 @@ function renderProducts() {
     const image = (p.image_urls && p.image_urls[0])
       ? `<img src="${p.image_urls[0]}" alt="${escapeAttr(p.title)}" class="product-image" style="object-fit:cover;background:none;" />`
       : `<div class="product-image"></div>`;
+    // The card still opens the quick-look modal, but the title is a real link
+    // to /p/<slug>. Without an <a href> a crawler never reaches the product
+    // pages -- a modal is invisible to it, and the sitemap alone is a hint,
+    // not a path.
+    const href = productHref(p);
     return `
     <div class="product-card overflow-hidden flex flex-col">
       <div data-open-modal="${p.id}" class="cursor-pointer flex flex-col flex-1">
         ${image}
         <div class="p-5 flex flex-col flex-1">
-          <h3 class="font-semibold navy mb-4 text-sm line-clamp-2" style="min-height: 2.6em;">${p.title}</h3>
+          <h3 class="font-semibold navy mb-4 text-sm line-clamp-2" style="min-height: 2.6em;">
+            <a href="${href}" class="hover:underline">${p.title}</a>
+          </h3>
           <div class="flex justify-between items-center mt-auto">
             <span class="text-lg font-bold gold">&#8369;${Number(p.price_php).toLocaleString()}</span>
             <button data-add-to-cart="${p.id}" class="navy-bg text-white px-3.5 py-2 rounded-full text-xs font-semibold hover:opacity-90">Add</button>

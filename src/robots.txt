@@ -13,3 +13,4 @@ Disallow: /success.html
 Disallow: /cancel.html
 
 Sitemap: https://www.mrspenky.shop/sitemap.xml
+Sitemap: https://www.mrspenky.shop/sitemap-products.xml
