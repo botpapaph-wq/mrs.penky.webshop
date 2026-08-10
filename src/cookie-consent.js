@@ -119,7 +119,10 @@
       '@media (max-width:560px){#mp-cookie-banner{padding:18px;}#mp-cookie-actions{width:100%;}',
       '#mp-cookie-banner button{flex:1;padding:12px 10px;}}',
       // Keep the banner clear of the chat launcher in the same corner.
-      '@media (min-width:900px){#mp-cookie-banner{right:110px;}}'
+      // Wide screens: step aside to the left. Phones: there is no room beside
+      // it, so the banner sits above the launcher instead of under it.
+      '@media (min-width:900px){#mp-cookie-banner{right:110px;}}',
+      '@media (max-width:640px){#mp-cookie-banner{bottom:84px;}}'
     ].join('');
     document.head.appendChild(css);
   }

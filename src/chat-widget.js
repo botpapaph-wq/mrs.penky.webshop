@@ -46,6 +46,10 @@
         bottom: 100px;
         right: 24px;
         width: 380px;
+        /* 380 + 24 right margin is 404px. A phone is 360 to 414px wide, so the
+           fixed width pushed the left edge off the screen. The cap keeps a
+           16px margin on the left whatever the screen measures. */
+        max-width: calc(100vw - 40px);
         max-height: 500px;
         background: white;
         border-radius: 8px;
@@ -54,6 +58,24 @@
         border-top: 4px solid var(--gold);
       }
       #chat-window.open { display: flex; flex-direction: column; }
+
+      /* On a phone the window spans the full width between two equal margins
+         and its height follows the visible viewport, so the browser chrome
+         and the on-screen keyboard cannot push the input field out of reach.
+         100dvh is the dynamic height; the vh line below is the fallback for
+         browsers that do not know it. */
+      @media (max-width: 640px) {
+        #chat-window {
+          left: 16px;
+          right: 16px;
+          width: auto;
+          max-width: none;
+          bottom: 88px;
+          max-height: calc(100vh - 150px);
+          max-height: calc(100dvh - 150px);
+        }
+        #chat-toggle { bottom: 16px; right: 16px; }
+      }
       #chat-header {
         background-color: var(--navy);
         color: white;
@@ -84,10 +106,15 @@
       .message.user { justify-content: flex-end; }
       .message.assistant { justify-content: flex-start; }
       .message-bubble {
-        max-width: 280px;
+        /* Relative, not a fixed 280px: the window is narrower on a phone, and
+           a bubble wider than its container would scroll sideways. */
+        max-width: 85%;
         padding: 10px 12px;
         border-radius: 6px;
         line-height: 1.4;
+        /* A pasted order number or a long Cebuano compound has no space to
+           break at and would otherwise widen the bubble past the window. */
+        overflow-wrap: anywhere;
       }
       .message.assistant .message-bubble {
         background-color: #f0f0f0;
