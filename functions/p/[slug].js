@@ -140,8 +140,13 @@ function renderPage(p, slug) {
   const price = Number(p.price_php) || 0;
   const img = (p.image_urls && p.image_urls[0]) || '/logo-large.png';
   const paras = cleanDescription(p.description);
-  const inStock = p.stock_quantity === null || Number(p.stock_quantity) > 0;
   const canonical = `https://www.mrspenky.shop/p/${slug}`;
+
+  // stock_quantity steht bei jedem Artikel auf 0 -- im Dropshipping wird das
+  // Feld nicht gepflegt, den Bestand hält CJ. Eine Anzeige daraus abzuleiten
+  // hieße, jedes Stück im Laden als ausverkauft zu melden. Also gar keine
+  // Aussage: weder auf der Seite noch in der Auszeichnung. Die Startseite
+  // handhabt es genauso, und CJ bestätigt die Verfügbarkeit bei der Bestellung.
 
   const summary = paras[0]
     ? paras[0].slice(0, 155)
@@ -163,9 +168,6 @@ function renderPage(p, slug) {
       url: canonical,
       priceCurrency: 'PHP',
       price: price.toFixed(2),
-      availability: inStock
-        ? 'https://schema.org/InStock'
-        : 'https://schema.org/OutOfStock',
       seller: { '@type': 'Organization', name: 'Mrs. Penky' },
     },
   };
@@ -244,14 +246,10 @@ function renderPage(p, slug) {
     <div>
       <p class="card-eyebrow">${esc(p.category || 'Devotional')}</p>
       <h1 class="text-3xl lg:text-4xl font-bold navy mb-4" style="letter-spacing:-0.5px;">${esc(p.title)}</h1>
-      <p class="text-3xl font-bold gold mb-2">${CURRENCY}${price.toLocaleString('en-PH')}</p>
-      <p class="text-sm mb-6 ${inStock ? 'stock-yes' : 'stock-no'}">
-        ${inStock ? 'In stock' : 'Currently unavailable'}
-      </p>
+      <p class="text-3xl font-bold gold mb-6">${CURRENCY}${price.toLocaleString('en-PH')}</p>
 
       <button id="addBtn"
-        class="w-full sm:w-auto px-8 py-3.5 rounded-full font-semibold pill-btn-primary transition mb-3"
-        ${inStock ? '' : 'disabled style="opacity:.45;cursor:not-allowed;"'}>
+        class="w-full sm:w-auto px-8 py-3.5 rounded-full font-semibold pill-btn-primary transition mb-3">
         Add to cart
       </button>
       <p id="added" class="text-sm stock-yes mb-6" hidden>Added. <a href="/checkout.html" class="underline">Go to checkout</a></p>
