@@ -33,6 +33,20 @@ const zohoAccessToken = Deno.env.get('ZOHO_ACCESS_TOKEN') || '';
 const internalFunctionSecret = Deno.env.get('INTERNAL_FUNCTION_SECRET') || '';
 const zohoOrgId = '932735549';
 
+/**
+ * Is this a PayPal notification?
+ *
+ * Three independent signals, any one is enough to route into the PayPal branch:
+ * the transmission header, the user agent PayPal sends from its delivery agent,
+ * and the shape of the body. Routing is not authentication -- whatever gets in
+ * here still has to survive verifyPayPalWebhook.
+ */
+function looksLikePayPal(req: Request, payload: any): boolean {
+  if (req.headers.has('paypal-transmission-id')) return true;
+  if ((req.headers.get('user-agent') ?? '').toLowerCase().includes('paypal')) return true;
+  return typeof payload?.event_type === 'string' && payload?.resource !== undefined;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
@@ -60,10 +74,22 @@ Deno.serve(async (req: Request) => {
       orderId = payload.data?.attributes?.data?.attributes?.reference_number
         || payload.data?.attributes?.reference_number
         || null;
-    } else if (req.headers.has('paypal-transmission-id')) {
+    } else if (looksLikePayPal(req, payload)) {
       // PayPal has no shared HMAC secret: the signature is checked by calling
       // PayPal back with the transmission headers.
+      //
+      // Routing deliberately does NOT depend on the transmission header alone.
+      // A real delivery was once rejected with 400 because that header did not
+      // arrive, which reads as "unknown sender" when it is in fact "PayPal, but
+      // something ate a header". Routing on the payload shape instead makes the
+      // failure land in verification, where it is logged and answered with 403.
+      // This weakens nothing: verifyPayPalWebhook still requires every
+      // transmission header and still asks PayPal to confirm the signature.
       if (!(await verifyPayPalWebhook(req.headers, body))) {
+        console.error(
+          'PayPal event rejected. Headers seen:',
+          [...req.headers.keys()].sort().join(', '),
+        );
         return new Response(JSON.stringify({ error: 'Invalid PayPal signature' }), { status: 403 });
       }
       gateway = 'paypal';
@@ -95,6 +121,10 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify({ status: 'captured' }), { status: 200 });
       }
     } else {
+      console.error(
+        'Unrecognised webhook. Headers:', [...req.headers.keys()].sort().join(', '),
+        '| Payload keys:', Object.keys(payload ?? {}).join(', '),
+      );
       return new Response(JSON.stringify({ error: 'No valid signature' }), { status: 400 });
     }
 
