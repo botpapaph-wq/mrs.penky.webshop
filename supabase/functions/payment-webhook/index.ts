@@ -23,6 +23,12 @@
 // Deno / Supabase Edge Functions runtime.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+// ACHTUNG beim Deploy ueber das Supabase-Dashboard: dort liegen die Dateien
+// flach nebeneinander, der Pfad muss dann './_shared/paypal.ts' heissen.
+// Hier steht '../_shared/…', weil das Repo ein echtes Elternverzeichnis hat
+// und die Supabase-CLI es so erwartet. Ein Deploy mit dem falschen Pfad
+// antwortet mit HTTP 400 und keiner brauchbaren Meldung -- das hat einmal
+// eine Weile gekostet. shipping-quote hat dieselbe Abweichung.
 import { verifyPayPalWebhook, paypalRequest } from '../_shared/paypal.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
