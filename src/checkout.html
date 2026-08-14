@@ -515,20 +515,7 @@
           <h2 class="card-title">How would you like to pay?</h2>
         </div>
         <div class="space-y-3">
-          <label class="pay-option">
-            <input type="radio" name="payment_method" value="paymongo" checked />
-            <span>
-              <span class="font-semibold navy block">PayMongo</span>
-              <span class="text-xs text-gray-500">GCash, Maya, QR Ph, credit and debit cards</span>
-            </span>
-          </label>
-          <label class="pay-option">
-            <input type="radio" name="payment_method" value="paypal" />
-            <span>
-              <span class="font-semibold navy block">PayPal</span>
-              <span class="text-xs text-gray-500">For paying from outside the Philippines</span>
-            </span>
-          </label>
+          <!-- PayMongo temporarily removed: PAYMONGO_SECRET_KEY not set, see ZAHLUNG_EINRICHTEN.md --><label class="pay-option"><input type="radio" name="payment_method" value="paypal" checked /><span><span class="font-semibold navy block">PayPal</span><span class="text-xs text-gray-500">Pay by card or your PayPal balance</span></span></label>
         </div>
         <p class="text-xs text-gray-500 mt-4 leading-relaxed">
           You are taken to the provider's own page to pay. We never see or store your card number.
